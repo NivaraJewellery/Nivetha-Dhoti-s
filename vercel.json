@@ -1,0 +1,1 @@
+{"rewrites":[{"source":"/api/products","destination":"/api/index.js?route=products"},{"source":"/api/admin-products","destination":"/api/index.js?route=admin-products"},{"source":"/admin","destination":"/admin.html"}]}
