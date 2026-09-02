@@ -1,1 +1,20 @@
-{"rewrites":[{"source":"/api/products","destination":"/api/index.js?route=products"},{"source":"/api/admin-products","destination":"/api/index.js?route=admin-products"},{"source":"/admin","destination":"/admin.html"}]}
+{
+  "rewrites": [
+    {
+      "source": "/api/products",
+      "destination": "/api/index.js?route=products"
+    },
+    {
+      "source": "/api/admin-products",
+      "destination": "/api/index.js?route=admin-products"
+    },
+    {
+      "source": "/api/admin-upload",
+      "destination": "/api/index.js?route=admin-upload"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
+    }
+  ]
+}

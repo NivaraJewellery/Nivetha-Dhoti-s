@@ -1,1 +1,9 @@
-{"name":"nivetha-dhotis","private":true,"type":"module","dependencies":{"@neondatabase/serverless":"^0.10.4"}}
+{
+  "name": "nivetha-dhotis",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "@vercel/blob": "^1.1.1"
+  }
+}
