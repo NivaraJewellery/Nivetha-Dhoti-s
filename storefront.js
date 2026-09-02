@@ -20,7 +20,6 @@ const esc = v =>
       })[c]
   );
 
-
 async function load() {
   try {
     const r = await fetch('/api/products', {
@@ -40,7 +39,6 @@ async function load() {
     products();
 
   } catch (e) {
-
     const m = `
       <p class="store-empty">
         We couldn't load the catalogue.<br>
@@ -53,7 +51,6 @@ async function load() {
   }
 }
 
-
 const cats = () =>
   [...new Set(
     S.products
@@ -61,9 +58,7 @@ const cats = () =>
       .filter(Boolean)
   )].sort((a, b) => a.localeCompare(b));
 
-
 function collections() {
-
   const t = $('collectionGrid');
   const cs = cats();
 
@@ -74,7 +69,6 @@ function collections() {
   }
 
   t.innerHTML = cs.slice(0, 5).map(c => {
-
     const p = S.products.find(
       x => x.category === c && x.image_1
     );
@@ -89,7 +83,6 @@ function collections() {
         href="#products"
         data-category="${esc(c)}"
       >
-
         ${
           p
             ? `<img
@@ -102,31 +95,23 @@ function collections() {
         <div>
           <h3>${esc(c).toUpperCase()}</h3>
           <span>SHOP NOW ›</span>
-
           <small class="collection-count">
             ${n} product${n === 1 ? '' : 's'}
           </small>
         </div>
-
       </a>
     `;
-
   }).join('');
 
-
   t.querySelectorAll('[data-category]').forEach(a => {
-
     a.onclick = () => {
       $('storeCategory').value = a.dataset.category;
       products();
     };
-
   });
 }
 
-
 function filters() {
-
   const s = $('storeCategory');
   const cur = s.value;
 
@@ -135,9 +120,7 @@ function filters() {
     cats()
       .map(
         c =>
-          `<option value="${esc(c)}">
-            ${esc(c)}
-          </option>`
+          `<option value="${esc(c)}">${esc(c)}</option>`
       )
       .join('');
 
@@ -146,9 +129,7 @@ function filters() {
   }
 }
 
-
 function filtered() {
-
   const q =
     ($('storeSearch').value || '')
       .trim()
@@ -158,162 +139,114 @@ function filtered() {
     $('storeCategory').value;
 
   return S.products.filter(p =>
-
     (
       !q ||
-
       String(p.product_name || '')
         .toLowerCase()
         .includes(q) ||
-
       String(p.product_code || '')
         .toLowerCase()
         .includes(q)
     )
-
     &&
-
     (
       !c ||
       p.category === c
     )
-
   );
 }
 
-
 function products() {
-
   const a = filtered();
 
   $('storeCount').textContent =
     `Showing ${a.length} of ${S.products.length}`;
 
-
   $('productGrid').innerHTML = a.length
-
     ? a.map(p => {
-
         const stock =
           Number(p.stock || 0) > 0;
 
         return `
-
           <article class="product-card dynamic">
 
             <div
               class="pic product-image-click"
               data-product-id="${p.id}"
             >
-
               ${
                 p.image_1
-
                   ? `<img
                       class="product-img primary-img"
                       src="${esc(p.image_1)}"
-                      alt="${esc(p.product_name)}"
+                      alt="Dhoti ${esc(p.product_code || '')}"
                     >`
-
                   : ''
               }
-
 
               ${
                 p.image_2
-
                   ? `<img
                       class="product-img secondary-img"
                       src="${esc(p.image_2)}"
-                      alt="${esc(p.product_name)}"
+                      alt="Dhoti ${esc(p.product_code || '')} alternate view"
                     >`
-
                   : ''
               }
-
 
               <button
                 class="heart"
                 type="button"
+                aria-label="Add to wishlist"
               >
                 ♡
               </button>
-
             </div>
 
+            <div class="product-card-info">
+              <p class="product-code">
+                ${esc(p.product_code)}
+              </p>
 
-            <p class="product-code">
-              ${esc(p.product_code)}
-            </p>
+              <strong class="product-price">
+                ${money(p.retail_price)}
+              </strong>
 
+              <p
+                class="stock-line ${stock ? '' : 'out'}"
+              >
+                ${
+                  stock
+                    ? `In stock · ${esc(p.stock)}`
+                    : 'Out of stock'
+                }
+              </p>
 
-            <h3>
-              ${esc(p.product_name)}
-            </h3>
-
-
-            <strong>
-              ${money(p.retail_price)}
-            </strong>
-
-
-            <p
-              class="stock-line ${stock ? '' : 'out'}"
-            >
-
-              ${
-                stock
-                  ? `In stock · ${esc(p.stock)}`
-                  : 'Out of stock'
-              }
-
-            </p>
-
-
-            <button
-              class="view-details"
-              data-id="${p.id}"
-            >
-              VIEW DETAILS
-            </button>
+              <button
+                class="view-details"
+                data-id="${p.id}"
+                type="button"
+              >
+                VIEW DETAILS
+              </button>
+            </div>
 
           </article>
-
         `;
-
       }).join('')
-
     : '<p class="store-empty">No products match your selection.</p>';
-
-
-  /*
-    VIEW DETAILS BUTTON
-  */
 
   $('productGrid')
     .querySelectorAll('.view-details')
     .forEach(b => {
-
       b.onclick = () =>
         openModal(+b.dataset.id);
-
     });
-
-
-  /*
-    PRODUCT IMAGE CLICK
-  */
 
   $('productGrid')
     .querySelectorAll('.product-image-click')
     .forEach(img => {
-
       img.onclick = e => {
-
-        /*
-          Do not open popup when
-          wishlist heart is clicked
-        */
         if (e.target.closest('.heart')) {
           return;
         }
@@ -321,16 +254,11 @@ function products() {
         openModal(
           +img.dataset.productId
         );
-
       };
-
     });
-
 }
 
-
 function openModal(id) {
-
   const p = S.products.find(
     x => +x.id === id
   );
@@ -339,33 +267,26 @@ function openModal(id) {
     return;
   }
 
-
   $('modalProductCode').textContent =
     p.product_code || '';
 
-
-  $('modalProductName').textContent =
-    p.product_name || '';
-
+  // Product name is intentionally not displayed in this storefront.
+  if ($('modalProductName')) {
+    $('modalProductName').textContent = '';
+  }
 
   $('modalCategory').textContent =
     p.category || '';
 
-
   $('modalPrice').textContent =
     money(p.retail_price);
-
 
   const stock =
     Number(p.stock || 0) > 0;
 
-
   $('modalStock').textContent = stock
-
     ? `In stock · ${p.stock} available`
-
     : 'Currently out of stock';
-
 
   $('modalStock')
     .classList
@@ -374,11 +295,9 @@ function openModal(id) {
       !stock
     );
 
-
   $('modalDescription').textContent =
     p.description ||
     'Product details will be added soon.';
-
 
   const imgs = [
     p.image_1,
@@ -386,56 +305,61 @@ function openModal(id) {
     p.image_3
   ].filter(Boolean);
 
-
   const main =
     $('modalMainImage');
-
 
   const thumbs =
     $('modalThumbs');
 
+  const mainWrap =
+    main.parentElement;
+
+  mainWrap.classList.remove('zoomed');
+  mainWrap.scrollTop = 0;
+  mainWrap.scrollLeft = 0;
+
+  main.onclick = () => {
+    mainWrap.classList.toggle('zoomed');
+
+    if (!mainWrap.classList.contains('zoomed')) {
+      mainWrap.scrollTop = 0;
+      mainWrap.scrollLeft = 0;
+    }
+  };
 
   if (imgs.length) {
-
     main.src = imgs[0];
-
     main.alt =
-      p.product_name || 'Product image';
-
+      `Dhoti ${p.product_code || ''}`;
 
     thumbs.innerHTML = imgs
-
       .map(
         (u, i) => `
-
           <button
             class="${i === 0 ? 'active' : ''}"
             data-img="${esc(u)}"
             type="button"
+            aria-label="View image ${i + 1}"
           >
-
             <img
               src="${esc(u)}"
               alt=""
             >
-
           </button>
-
         `
       )
-
       .join('');
-
 
     thumbs
       .querySelectorAll('button')
       .forEach(b => {
-
         b.onclick = () => {
-
           main.src =
             b.dataset.img;
 
+          mainWrap.classList.remove('zoomed');
+          mainWrap.scrollTop = 0;
+          mainWrap.scrollLeft = 0;
 
           thumbs
             .querySelectorAll('button')
@@ -443,42 +367,29 @@ function openModal(id) {
               x.classList.remove('active')
             );
 
-
           b.classList.add('active');
-
         };
-
       });
 
   } else {
-
     main.removeAttribute('src');
-
     thumbs.innerHTML = '';
-
   }
-
 
   $('productModal').hidden =
     false;
 
-
   document.body.style.overflow =
     'hidden';
-
 }
 
-
 function closeModal() {
-
   $('productModal').hidden =
     true;
 
   document.body.style.overflow =
     '';
-
 }
-
 
 document.addEventListener(
   'DOMContentLoaded',
@@ -490,51 +401,34 @@ document.addEventListener(
         products
       );
 
-
     $('storeCategory')
       .addEventListener(
         'change',
         products
       );
 
-
     document
       .querySelectorAll(
         '[data-close-modal]'
       )
       .forEach(x => {
-
         x.onclick =
           closeModal;
-
       });
-
 
     document
       .addEventListener(
         'keydown',
         e => {
-
           if (
             e.key === 'Escape' &&
             !$('productModal').hidden
           ) {
-
             closeModal();
-
           }
-
         }
       );
 
-
-    /*
-      IMPORTANT:
-      Starts loading products
-      from /api/products
-    */
-
     load();
-
   }
 );
