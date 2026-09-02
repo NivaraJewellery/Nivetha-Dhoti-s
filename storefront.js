@@ -1,4 +1,23 @@
-const S = { products: [] };
+const S = {
+  products: [],
+  cart: loadCart(),
+  activeProductId: null,
+  modalQty: 1
+};
+
+function loadCart() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('nivetha_cart') || '[]');
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCart() {
+  localStorage.setItem('nivetha_cart', JSON.stringify(S.cart));
+  updateCartCount();
+}
 
 const $ = id => document.getElementById(id);
 
@@ -34,9 +53,11 @@ async function load() {
 
     S.products = d.products || [];
 
+    reconcileCart();
     collections();
     filters();
     products();
+    renderCart();
 
   } catch (e) {
     const m = `
@@ -267,6 +288,11 @@ function openModal(id) {
     return;
   }
 
+  S.activeProductId = id;
+  S.modalQty = 1;
+  if ($('modalCartMessage')) $('modalCartMessage').textContent = '';
+  updateModalQuantity();
+
   $('modalProductCode').textContent =
     p.product_code || '';
 
@@ -383,6 +409,188 @@ function openModal(id) {
     'hidden';
 }
 
+
+function productById(id) {
+  return S.products.find(p => +p.id === +id);
+}
+
+function reconcileCart() {
+  S.cart = S.cart
+    .map(item => {
+      const p = productById(item.id);
+      if (!p) return null;
+      const stock = Math.max(0, Number(p.stock || 0));
+      const qty = Math.min(Math.max(1, Number(item.qty || 1)), stock);
+      return stock > 0 ? { id: +p.id, qty } : null;
+    })
+    .filter(Boolean);
+
+  saveCart();
+}
+
+function cartQuantity() {
+  return S.cart.reduce((sum, item) => sum + Number(item.qty || 0), 0);
+}
+
+function updateCartCount() {
+  const el = $('cartCount');
+  if (el) el.textContent = cartQuantity();
+}
+
+function updateModalQuantity() {
+  const el = $('modalQty');
+  if (el) el.textContent = S.modalQty;
+
+  const p = productById(S.activeProductId);
+  const stock = p ? Math.max(0, Number(p.stock || 0)) : 0;
+  const minus = $('modalQtyMinus');
+  const plus = $('modalQtyPlus');
+  const add = $('modalAddToCart');
+
+  if (minus) minus.disabled = S.modalQty <= 1;
+  if (plus) plus.disabled = S.modalQty >= stock;
+  if (add) {
+    add.disabled = stock <= 0;
+    add.textContent = stock > 0 ? 'ADD TO CART' : 'OUT OF STOCK';
+  }
+}
+
+function changeModalQuantity(delta) {
+  const p = productById(S.activeProductId);
+  if (!p) return;
+
+  const stock = Math.max(0, Number(p.stock || 0));
+  S.modalQty = Math.min(stock, Math.max(1, S.modalQty + delta));
+  updateModalQuantity();
+}
+
+function addActiveProductToCart() {
+  const p = productById(S.activeProductId);
+  if (!p) return;
+
+  const stock = Math.max(0, Number(p.stock || 0));
+  if (!stock) return;
+
+  const existing = S.cart.find(item => +item.id === +p.id);
+  const currentQty = existing ? Number(existing.qty || 0) : 0;
+  const nextQty = Math.min(stock, currentQty + S.modalQty);
+
+  if (existing) {
+    existing.qty = nextQty;
+  } else {
+    S.cart.push({ id: +p.id, qty: Math.min(S.modalQty, stock) });
+  }
+
+  saveCart();
+  renderCart();
+
+  const message = $('modalCartMessage');
+  if (message) {
+    message.textContent =
+      nextQty < currentQty + S.modalQty
+        ? `Cart updated to the maximum available stock (${stock}).`
+        : 'Added to cart.';
+  }
+}
+
+function changeCartQuantity(id, delta) {
+  const item = S.cart.find(x => +x.id === +id);
+  const p = productById(id);
+  if (!item || !p) return;
+
+  const stock = Math.max(0, Number(p.stock || 0));
+  const next = Number(item.qty || 0) + delta;
+
+  if (next <= 0) {
+    removeFromCart(id);
+    return;
+  }
+
+  item.qty = Math.min(next, stock);
+  saveCart();
+  renderCart();
+}
+
+function removeFromCart(id) {
+  S.cart = S.cart.filter(item => +item.id !== +id);
+  saveCart();
+  renderCart();
+}
+
+function renderCart() {
+  updateCartCount();
+
+  const itemsEl = $('cartItems');
+  const subtotalEl = $('cartSubtotal');
+  const checkout = $('checkoutButton');
+  if (!itemsEl || !subtotalEl) return;
+
+  let subtotal = 0;
+
+  const rows = S.cart.map(item => {
+    const p = productById(item.id);
+    if (!p) return '';
+
+    const qty = Math.max(1, Number(item.qty || 1));
+    const stock = Math.max(0, Number(p.stock || 0));
+    const price = Number(p.retail_price || 0);
+    subtotal += price * qty;
+
+    return `
+      <article class="cart-item">
+        <div class="cart-item-image">
+          ${p.image_1 ? `<img src="${esc(p.image_1)}" alt="Dhoti ${esc(p.product_code || '')}">` : ''}
+        </div>
+        <div class="cart-item-info">
+          <p class="cart-item-code">${esc(p.product_code || '')}</p>
+          <strong>${money(price)}</strong>
+          <small>${stock} available</small>
+          <div class="cart-item-actions">
+            <div class="qty-control small">
+              <button type="button" data-cart-minus="${p.id}" aria-label="Decrease quantity">−</button>
+              <span>${qty}</span>
+              <button type="button" data-cart-plus="${p.id}" aria-label="Increase quantity" ${qty >= stock ? 'disabled' : ''}>+</button>
+            </div>
+            <button class="cart-remove" type="button" data-cart-remove="${p.id}">REMOVE</button>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join('');
+
+  itemsEl.innerHTML = rows ||
+    '<div class="cart-empty"><span>🛒</span><p>Your cart is empty.</p><small>Add a dhoti from the collection to begin.</small></div>';
+
+  subtotalEl.textContent = money(subtotal);
+  if (checkout) checkout.disabled = S.cart.length === 0;
+
+  itemsEl.querySelectorAll('[data-cart-minus]').forEach(b => {
+    b.onclick = () => changeCartQuantity(+b.dataset.cartMinus, -1);
+  });
+
+  itemsEl.querySelectorAll('[data-cart-plus]').forEach(b => {
+    b.onclick = () => changeCartQuantity(+b.dataset.cartPlus, 1);
+  });
+
+  itemsEl.querySelectorAll('[data-cart-remove]').forEach(b => {
+    b.onclick = () => removeFromCart(+b.dataset.cartRemove);
+  });
+}
+
+function openCart() {
+  renderCart();
+  $('cartDrawer').classList.add('open');
+  $('cartDrawer').setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCart() {
+  $('cartDrawer').classList.remove('open');
+  $('cartDrawer').setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+
 function closeModal() {
   $('productModal').hidden =
     true;
@@ -407,6 +615,22 @@ document.addEventListener(
         products
       );
 
+    $('modalQtyMinus').addEventListener('click', () => changeModalQuantity(-1));
+    $('modalQtyPlus').addEventListener('click', () => changeModalQuantity(1));
+    $('modalAddToCart').addEventListener('click', addActiveProductToCart);
+
+    $('cartButton').addEventListener('click', openCart);
+
+    document.querySelectorAll('[data-close-cart]').forEach(x => {
+      x.addEventListener('click', closeCart);
+    });
+
+    $('checkoutButton').addEventListener('click', () => {
+      $('checkoutMessage').textContent = 'Checkout will be added in the next build.';
+    });
+
+    updateCartCount();
+
     document
       .querySelectorAll(
         '[data-close-modal]'
@@ -420,11 +644,9 @@ document.addEventListener(
       .addEventListener(
         'keydown',
         e => {
-          if (
-            e.key === 'Escape' &&
-            !$('productModal').hidden
-          ) {
-            closeModal();
+          if (e.key === 'Escape') {
+            if (!$('productModal').hidden) closeModal();
+            if ($('cartDrawer').classList.contains('open')) closeCart();
           }
         }
       );

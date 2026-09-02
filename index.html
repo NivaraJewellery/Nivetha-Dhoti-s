@@ -26,7 +26,13 @@
     <a href="#wholesale">WHOLESALE</a>
     <a href="#contact">CONTACT</a>
   </nav>
-  <div class="actions"><span>⌕</span><span>♙</span><span>🛒</span></div>
+  <div class="actions">
+    <span>⌕</span>
+    <span>♙</span>
+    <button id="cartButton" class="cart-button" type="button" aria-label="Open shopping cart">
+      🛒<span id="cartCount" class="cart-count">0</span>
+    </button>
+  </div>
 </header>
 
 <main>
@@ -91,6 +97,30 @@
     </div>
   </section>
 </div>
+
+<div id="cartDrawer" class="cart-drawer" aria-hidden="true">
+  <div class="cart-drawer-backdrop" data-close-cart></div>
+  <aside class="cart-panel" role="dialog" aria-modal="true" aria-labelledby="cartTitle">
+    <div class="cart-header">
+      <div>
+        <p class="cart-kicker">YOUR SELECTION</p>
+        <h2 id="cartTitle">SHOPPING CART</h2>
+      </div>
+      <button class="cart-close" type="button" aria-label="Close shopping cart" data-close-cart>×</button>
+    </div>
+    <div id="cartItems" class="cart-items"></div>
+    <div class="cart-footer">
+      <div class="cart-subtotal">
+        <span>SUBTOTAL</span>
+        <strong id="cartSubtotal">₹0</strong>
+      </div>
+      <p class="cart-shipping-note">Shipping and final stock availability are confirmed at checkout.</p>
+      <button id="checkoutButton" class="checkout-button" type="button">PROCEED TO CHECKOUT</button>
+      <p id="checkoutMessage" class="checkout-message" aria-live="polite"></p>
+    </div>
+  </aside>
+</div>
+
 <footer id="contact">
   <div class="footer-brand"><img src="assets/nivetha-logo-approved.jpg" alt=""><p>Bringing you the finest quality dhotis crafted with tradition, woven with care, and made for every occasion.</p></div>
   <div><h4>QUICK LINKS</h4><a>Home</a><a>Collections</a><a>Shop</a><a>About Us</a><a>Wholesale</a><a>Contact Us</a></div>
