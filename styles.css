@@ -206,3 +206,95 @@
     width: 220%;
   }
 }
+
+/* ========================================
+   V10 — POPUP COMPLETE IMAGE DISPLAY
+   Keep this section at the end of the file.
+======================================== */
+
+.product-modal-card {
+  width: min(1250px, 96vw);
+  max-height: 92vh;
+  grid-template-columns: minmax(0, 1.55fr) minmax(310px, .45fr);
+}
+
+.modal-gallery {
+  min-width: 0;
+  padding: 22px;
+  background: #3a1e0f;
+}
+
+/* Preserve the original photo proportions and show the whole dhoti/border. */
+.modal-main-image-wrap {
+  width: 100%;
+  height: auto;
+  min-height: 500px;
+  max-height: 72vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #241208;
+  position: relative;
+  cursor: zoom-in;
+}
+
+.modal-main-image {
+  display: block;
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 72vh !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  cursor: zoom-in;
+}
+
+/* Click-to-zoom mode for inspecting the dhoti border/zari. */
+.modal-main-image-wrap.zoomed {
+  display: block;
+  overflow: auto;
+  cursor: zoom-out;
+}
+
+.modal-main-image-wrap.zoomed .modal-main-image {
+  width: 180% !important;
+  height: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+  cursor: zoom-out;
+}
+
+.modal-thumbs {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.modal-thumbs button {
+  width: 85px;
+  height: 72px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.modal-thumbs img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain !important;
+}
+
+@media (max-width: 850px) {
+  .product-modal-card {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-main-image-wrap {
+    min-height: 350px;
+    max-height: 60vh;
+  }
+
+  .modal-main-image {
+    max-height: 60vh !important;
+  }
+}
