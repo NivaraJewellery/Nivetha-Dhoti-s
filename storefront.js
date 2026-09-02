@@ -4,7 +4,75 @@ const cats=()=>[...new Set(S.products.map(p=>p.category).filter(Boolean))].sort(
 function collections(){const t=$('collectionGrid'),cs=cats();if(!cs.length){t.innerHTML='<p class="store-empty">Collections will appear after products are added in Admin.</p>';return}t.innerHTML=cs.slice(0,5).map(c=>{const p=S.products.find(x=>x.category===c&&x.image_1),n=S.products.filter(x=>x.category===c).length;return `<a class="collection-card dynamic" href="#products" data-category="${esc(c)}">${p?`<img src="${esc(p.image_1)}" alt="${esc(c)}">`:''}<div><h3>${esc(c).toUpperCase()}</h3><span>SHOP NOW ›</span><small class="collection-count">${n} product${n===1?'':'s'}</small></div></a>`}).join('');t.querySelectorAll('[data-category]').forEach(a=>a.onclick=()=>{$('storeCategory').value=a.dataset.category;products()})}
 function filters(){const s=$('storeCategory'),cur=s.value;s.innerHTML='<option value="">All Collections</option>'+cats().map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');if(cats().includes(cur))s.value=cur}
 function filtered(){const q=($('storeSearch').value||'').trim().toLowerCase(),c=$('storeCategory').value;return S.products.filter(p=>(!q||String(p.product_name).toLowerCase().includes(q)||String(p.product_code).toLowerCase().includes(q))&&(!c||p.category===c))}
-function products(){const a=filtered();$('storeCount').textContent=`Showing ${a.length} of ${S.products.length}`;$('productGrid').innerHTML=a.length?a.map(p=>{const stock=Number(p.stock||0)>0;return `<article class="product-card dynamic"><div class="pic">${p.image_1?`<img src="${esc(p.image_1)}" alt="${esc(p.product_name)}">`:''}<button class="heart">♡</button></div><p class="product-code">${esc(p.product_code)}</p><h3>${esc(p.product_name)}</h3><strong>${money(p.retail_price)}</strong><p class="stock-line ${stock?'':'out'}">${stock?`In stock · ${esc(p.stock)}`:'Out of stock'}</p><button class="view-details" data-id="${p.id}">VIEW DETAILS</button></article>`}).join(''):'<p class="store-empty">No products match your selection.</p>';$('productGrid').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>openModal(+b.dataset.id))}
-function openModal(id){const p=S.products.find(x=>+x.id===id);if(!p)return;$('modalProductCode').textContent=p.product_code||'';$('modalProductName').textContent=p.product_name||'';$('modalCategory').textContent=p.category||'';$('modalPrice').textContent=money(p.retail_price);const stock=Number(p.stock||0)>0;$('modalStock').textContent=stock?`In stock · ${p.stock} available`:'Currently out of stock';$('modalStock').classList.toggle('out',!stock);$('modalDescription').textContent=p.description||'Product details will be added soon.';const imgs=[p.image_1,p.image_2,p.image_3].filter(Boolean),main=$('modalMainImage'),thumbs=$('modalThumbs');if(imgs.length){main.src=imgs[0];main.alt=p.product_name;thumbs.innerHTML=imgs.map((u,i)=>`<button class="${i===0?'active':''}" data-img="${esc(u)}"><img src="${esc(u)}" alt=""></button>`).join('');thumbs.querySelectorAll('button').forEach(b=>b.onclick=()=>{main.src=b.dataset.img;thumbs.querySelectorAll('button').forEach(x=>x.classList.remove('active'));b.classList.add('active')})}else{main.removeAttribute('src');thumbs.innerHTML=''}$('productModal').hidden=false;document.body.style.overflow='hidden'}
-function closeModal(){$('productModal').hidden=true;document.body.style.overflow=''}
-document.addEventListener('DOMContentLoaded',()=>{$('storeSearch').addEventListener('input',products);$('storeCategory').addEventListener('change',products);document.querySelectorAll('[data-close-modal]').forEach(x=>x.onclick=closeModal);document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('productModal').hidden)closeModal()});load()});
+function products(){
+  const a=filtered();
+
+  $('storeCount').textContent=`Showing ${a.length} of ${S.products.length}`;
+
+  $('productGrid').innerHTML=a.length
+    ? a.map(p=>{
+        const stock=Number(p.stock||0)>0;
+
+        return `
+          <article class="product-card dynamic">
+
+            <div class="pic product-image-click" data-product-id="${p.id}">
+              ${
+                p.image_1
+                  ? `<img
+                      class="product-img primary-img"
+                      src="${esc(p.image_1)}"
+                      alt="${esc(p.product_name)}"
+                    >`
+                  : ''
+              }
+
+              ${
+                p.image_2
+                  ? `<img
+                      class="product-img secondary-img"
+                      src="${esc(p.image_2)}"
+                      alt="${esc(p.product_name)}"
+                    >`
+                  : ''
+              }
+
+              <button class="heart" type="button">♡</button>
+            </div>
+
+            <p class="product-code">${esc(p.product_code)}</p>
+
+            <h3>${esc(p.product_name)}</h3>
+
+            <strong>${money(p.retail_price)}</strong>
+
+            <p class="stock-line ${stock?'':'out'}">
+              ${stock ? `In stock · ${esc(p.stock)}` : 'Out of stock'}
+            </p>
+
+            <button class="view-details" data-id="${p.id}">
+              VIEW DETAILS
+            </button>
+
+          </article>
+        `;
+      }).join('')
+    : '<p class="store-empty">No products match your selection.</p>';
+
+  /* View Details button */
+  $('productGrid')
+    .querySelectorAll('.view-details')
+    .forEach(b=>{
+      b.onclick=()=>openModal(+b.dataset.id);
+    });
+
+  /* Product image click */
+  $('productGrid')
+    .querySelectorAll('.product-image-click')
+    .forEach(img=>{
+      img.onclick=(e)=>{
+        if(e.target.closest('.heart')) return;
+        openModal(+img.dataset.productId);
+      };
+    });
+}
