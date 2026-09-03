@@ -289,7 +289,9 @@ function openModal(id) {
   }
 
   S.activeProductId = id;
-  S.modalQty = 0;
+
+  const existingCartItem = S.cart.find(item => +item.id === +id);
+  S.modalQty = existingCartItem ? Math.max(0, Number(existingCartItem.qty || 0)) : 0;
 
   if ($('modalCartMessage')) $('modalCartMessage').textContent = '';
   updateModalQuantity();
@@ -490,14 +492,21 @@ function addActiveProductToCart() {
   if (!p) return;
 
   const stock = Math.max(0, Number(p.stock || 0));
-  if (!stock) return;
+  const selectedQty = Math.min(
+    stock,
+    Math.max(0, Number(S.modalQty || 0))
+  );
 
-  const selectedQty = Math.min(stock, Math.max(1, Number(S.modalQty || 1)));
+  if (!stock || selectedQty <= 0) {
+    updateModalQuantity();
+    return;
+  }
+
   const existing = S.cart.find(item => +item.id === +p.id);
   const message = $('modalCartMessage');
 
   if (existing) {
-    const previousQty = Number(existing.qty || 1);
+    const previousQty = Math.max(0, Number(existing.qty || 0));
 
     if (previousQty === selectedQty) {
       if (message) {
@@ -521,6 +530,10 @@ function addActiveProductToCart() {
 
   saveCart();
   renderCart();
+
+  // Keep the selector synced with the quantity now stored in cart.
+  S.modalQty = selectedQty;
+  updateModalQuantity();
 }
 
 function changeCartQuantity(id, delta) {
@@ -539,12 +552,22 @@ function changeCartQuantity(id, delta) {
   item.qty = Math.min(next, stock);
   saveCart();
   renderCart();
+
+  if (+S.activeProductId === +id && !$('productModal').hidden) {
+    S.modalQty = item.qty;
+    updateModalQuantity();
+  }
 }
 
 function removeFromCart(id) {
   S.cart = S.cart.filter(item => +item.id !== +id);
   saveCart();
   renderCart();
+
+  if (+S.activeProductId === +id && !$('productModal').hidden) {
+    S.modalQty = 0;
+    updateModalQuantity();
+  }
 }
 
 function renderCart() {
