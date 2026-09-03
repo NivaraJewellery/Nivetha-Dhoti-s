@@ -447,7 +447,14 @@ function updateCartCount() {
 
 function updateModalQuantity() {
   const el = $('modalQty');
-  if (el) el.textContent = S.modalQty;
+  if (el) {
+    if ('value' in el) {
+      el.value = S.modalQty;
+      el.max = Math.max(0, Number(productById(S.activeProductId)?.stock || 0));
+    } else {
+      el.textContent = S.modalQty;
+    }
+  }
 
   const p = productById(S.activeProductId);
   const stock = p ? Math.max(0, Number(p.stock || 0)) : 0;
@@ -469,6 +476,17 @@ function updateModalQuantity() {
       add.textContent = 'ADD TO CART';
     }
   }
+}
+
+function setModalQuantity(value) {
+  const p = productById(S.activeProductId);
+  const stock = p ? Math.max(0, Number(p.stock || 0)) : 0;
+
+  let qty = Number.parseInt(value, 10);
+  if (Number.isNaN(qty)) qty = 0;
+
+  S.modalQty = Math.min(stock, Math.max(0, qty));
+  updateModalQuantity();
 }
 
 function changeModalQuantity(delta) {
@@ -652,6 +670,15 @@ document.addEventListener(
 
     $('modalQtyMinus')?.addEventListener('click', () => changeModalQuantity(-1));
     $('modalQtyPlus')?.addEventListener('click', () => changeModalQuantity(1));
+
+    $('modalQty')?.addEventListener('input', e => {
+      setModalQuantity(e.target.value);
+    });
+
+    $('modalQty')?.addEventListener('blur', e => {
+      setModalQuantity(e.target.value);
+    });
+
     $('modalAddToCart')?.addEventListener('click', addActiveProductToCart);
 
     $('cartButton')?.addEventListener('click', openCart);

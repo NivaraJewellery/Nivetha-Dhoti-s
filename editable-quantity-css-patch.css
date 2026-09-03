@@ -1,0 +1,25 @@
+/* Editable product quantity */
+.qty-control .modal-qty-input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  border-left: 1px solid #d7bd91;
+  border-right: 1px solid #d7bd91;
+  background: #fff9ef;
+  color: #3b2112;
+  text-align: center;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  appearance: textfield;
+}
+
+.qty-control .modal-qty-input::-webkit-outer-spin-button,
+.qty-control .modal-qty-input::-webkit-inner-spin-button {
+  margin: 0;
+}
+
+.qty-control .modal-qty-input:focus {
+  box-shadow: inset 0 0 0 1px #a36d24;
+}
