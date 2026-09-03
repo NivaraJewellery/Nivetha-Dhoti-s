@@ -289,9 +289,7 @@ function openModal(id) {
   }
 
   S.activeProductId = id;
-
-  const cartItem = S.cart.find(item => +item.id === +id);
-  S.modalQty = cartItem ? Math.max(1, Number(cartItem.qty || 1)) : 1;
+  S.modalQty = 0;
 
   if ($('modalCartMessage')) $('modalCartMessage').textContent = '';
   updateModalQuantity();
@@ -457,11 +455,19 @@ function updateModalQuantity() {
   const plus = $('modalQtyPlus');
   const add = $('modalAddToCart');
 
-  if (minus) minus.disabled = S.modalQty <= 1;
+  if (minus) minus.disabled = S.modalQty <= 0;
   if (plus) plus.disabled = S.modalQty >= stock;
+
   if (add) {
-    add.disabled = stock <= 0;
-    add.textContent = stock > 0 ? 'ADD TO CART' : 'OUT OF STOCK';
+    add.disabled = stock <= 0 || S.modalQty <= 0;
+
+    if (stock <= 0) {
+      add.textContent = 'OUT OF STOCK';
+    } else if (S.modalQty <= 0) {
+      add.textContent = 'SELECT QUANTITY';
+    } else {
+      add.textContent = 'ADD TO CART';
+    }
   }
 }
 
@@ -470,7 +476,7 @@ function changeModalQuantity(delta) {
   if (!p) return;
 
   const stock = Math.max(0, Number(p.stock || 0));
-  S.modalQty = Math.min(stock, Math.max(1, S.modalQty + delta));
+  S.modalQty = Math.min(stock, Math.max(0, S.modalQty + delta));
   updateModalQuantity();
 }
 
@@ -479,37 +485,47 @@ function addActiveProductToCart() {
   if (!p) return;
 
   const stock = Math.max(0, Number(p.stock || 0));
-  if (!stock) return;
+  const selectedQty = Math.max(0, Number(S.modalQty || 0));
 
-  const selectedQty = Math.min(stock, Math.max(1, Number(S.modalQty || 1)));
+  if (!stock || selectedQty <= 0) {
+    updateModalQuantity();
+    return;
+  }
+
   const existing = S.cart.find(item => +item.id === +p.id);
+  const currentQty = existing ? Math.max(0, Number(existing.qty || 0)) : 0;
+  const availableToAdd = Math.max(0, stock - currentQty);
+  const qtyToAdd = Math.min(selectedQty, availableToAdd);
   const message = $('modalCartMessage');
 
+  if (qtyToAdd <= 0) {
+    if (message) {
+      message.textContent = `Maximum available stock (${stock}) is already in your cart.`;
+    }
+    S.modalQty = 0;
+    updateModalQuantity();
+    return;
+  }
+
   if (existing) {
-    const previousQty = Number(existing.qty || 1);
-
-    if (previousQty === selectedQty) {
-      if (message) {
-        message.textContent = `Already in cart · Quantity ${selectedQty}`;
-      }
-      return;
-    }
-
-    existing.qty = selectedQty;
-
-    if (message) {
-      message.textContent = `Cart quantity updated to ${selectedQty}.`;
-    }
+    existing.qty = currentQty + qtyToAdd;
   } else {
-    S.cart.push({ id: +p.id, qty: selectedQty });
-
-    if (message) {
-      message.textContent = `Added to cart · Quantity ${selectedQty}`;
-    }
+    S.cart.push({ id: +p.id, qty: qtyToAdd });
   }
 
   saveCart();
   renderCart();
+
+  if (message) {
+    message.textContent =
+      qtyToAdd < selectedQty
+        ? `Added ${qtyToAdd}. Cart now has the maximum available stock (${stock}).`
+        : `Added ${qtyToAdd} to cart.`;
+  }
+
+  // Reset to zero after adding so repeated clicks cannot add again accidentally.
+  S.modalQty = 0;
+  updateModalQuantity();
 }
 
 function changeCartQuantity(id, delta) {
