@@ -446,104 +446,81 @@ function updateCartCount() {
 }
 
 function updateModalQuantity() {
-  const el = $('modalQty');
-  if (el) {
-    if ('value' in el) {
-      el.value = S.modalQty;
-      el.max = Math.max(0, Number(productById(S.activeProductId)?.stock || 0));
-    } else {
-      el.textContent = S.modalQty;
-    }
-  }
-
   const p = productById(S.activeProductId);
   const stock = p ? Math.max(0, Number(p.stock || 0)) : 0;
+  const input = $('modalQty');
   const minus = $('modalQtyMinus');
   const plus = $('modalQtyPlus');
   const add = $('modalAddToCart');
+
+  if (input) {
+    input.value = String(S.modalQty);
+    input.min = '0';
+    input.max = String(stock);
+  }
 
   if (minus) minus.disabled = S.modalQty <= 0;
   if (plus) plus.disabled = S.modalQty >= stock;
 
   if (add) {
     add.disabled = stock <= 0 || S.modalQty <= 0;
-
-    if (stock <= 0) {
-      add.textContent = 'OUT OF STOCK';
-    } else if (S.modalQty <= 0) {
-      add.textContent = 'SELECT QUANTITY';
-    } else {
-      add.textContent = 'ADD TO CART';
-    }
+    add.textContent = stock <= 0 ? 'OUT OF STOCK'
+      : S.modalQty <= 0 ? 'SELECT QUANTITY'
+      : 'ADD TO CART';
   }
 }
 
 function setModalQuantity(value) {
   const p = productById(S.activeProductId);
   const stock = p ? Math.max(0, Number(p.stock || 0)) : 0;
-
   let qty = Number.parseInt(value, 10);
   if (Number.isNaN(qty)) qty = 0;
-
   S.modalQty = Math.min(stock, Math.max(0, qty));
   updateModalQuantity();
 }
-
 function changeModalQuantity(delta) {
   const p = productById(S.activeProductId);
   if (!p) return;
-
   const stock = Math.max(0, Number(p.stock || 0));
-  S.modalQty = Math.min(stock, Math.max(0, S.modalQty + delta));
+  S.modalQty = Math.min(stock, Math.max(0, Number(S.modalQty || 0) + delta));
   updateModalQuantity();
 }
-
 function addActiveProductToCart() {
   const p = productById(S.activeProductId);
   if (!p) return;
 
   const stock = Math.max(0, Number(p.stock || 0));
-  const selectedQty = Math.max(0, Number(S.modalQty || 0));
+  if (!stock) return;
 
-  if (!stock || selectedQty <= 0) {
-    updateModalQuantity();
-    return;
-  }
-
+  const selectedQty = Math.min(stock, Math.max(1, Number(S.modalQty || 1)));
   const existing = S.cart.find(item => +item.id === +p.id);
-  const currentQty = existing ? Math.max(0, Number(existing.qty || 0)) : 0;
-  const availableToAdd = Math.max(0, stock - currentQty);
-  const qtyToAdd = Math.min(selectedQty, availableToAdd);
   const message = $('modalCartMessage');
 
-  if (qtyToAdd <= 0) {
-    if (message) {
-      message.textContent = `Maximum available stock (${stock}) is already in your cart.`;
-    }
-    S.modalQty = 0;
-    updateModalQuantity();
-    return;
-  }
-
   if (existing) {
-    existing.qty = currentQty + qtyToAdd;
+    const previousQty = Number(existing.qty || 1);
+
+    if (previousQty === selectedQty) {
+      if (message) {
+        message.textContent = `Already in cart · Quantity ${selectedQty}`;
+      }
+      return;
+    }
+
+    existing.qty = selectedQty;
+
+    if (message) {
+      message.textContent = `Cart quantity updated to ${selectedQty}.`;
+    }
   } else {
-    S.cart.push({ id: +p.id, qty: qtyToAdd });
+    S.cart.push({ id: +p.id, qty: selectedQty });
+
+    if (message) {
+      message.textContent = `Added to cart · Quantity ${selectedQty}`;
+    }
   }
 
   saveCart();
   renderCart();
-
-  if (message) {
-    message.textContent =
-      qtyToAdd < selectedQty
-        ? `Added ${qtyToAdd}. Cart now has the maximum available stock (${stock}).`
-        : `Added ${qtyToAdd} to cart.`;
-  }
-
-  // Reset to zero after adding so repeated clicks cannot add again accidentally.
-  S.modalQty = 0;
-  updateModalQuantity();
 }
 
 function changeCartQuantity(id, delta) {
@@ -671,14 +648,8 @@ document.addEventListener(
     $('modalQtyMinus')?.addEventListener('click', () => changeModalQuantity(-1));
     $('modalQtyPlus')?.addEventListener('click', () => changeModalQuantity(1));
 
-    $('modalQty')?.addEventListener('input', e => {
-      setModalQuantity(e.target.value);
-    });
-
-    $('modalQty')?.addEventListener('blur', e => {
-      setModalQuantity(e.target.value);
-    });
-
+    $('modalQty')?.addEventListener('input', e => setModalQuantity(e.target.value));
+    $('modalQty')?.addEventListener('change', e => setModalQuantity(e.target.value));
     $('modalAddToCart')?.addEventListener('click', addActiveProductToCart);
 
     $('cartButton')?.addEventListener('click', openCart);
