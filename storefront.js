@@ -615,18 +615,20 @@ document.addEventListener(
         products
       );
 
-    $('modalQtyMinus').addEventListener('click', () => changeModalQuantity(-1));
-    $('modalQtyPlus').addEventListener('click', () => changeModalQuantity(1));
-    $('modalAddToCart').addEventListener('click', addActiveProductToCart);
+    $('modalQtyMinus')?.addEventListener('click', () => changeModalQuantity(-1));
+    $('modalQtyPlus')?.addEventListener('click', () => changeModalQuantity(1));
+    $('modalAddToCart')?.addEventListener('click', addActiveProductToCart);
 
-    $('cartButton').addEventListener('click', openCart);
+    $('cartButton')?.addEventListener('click', openCart);
 
     document.querySelectorAll('[data-close-cart]').forEach(x => {
       x.addEventListener('click', closeCart);
     });
 
-    $('checkoutButton').addEventListener('click', () => {
-      $('checkoutMessage').textContent = 'Checkout will be added in the next build.';
+    $('checkoutButton')?.addEventListener('click', () => {
+      if ($('checkoutMessage')) {
+        $('checkoutMessage').textContent = 'Checkout will be added in the next build.';
+      }
     });
 
     updateCartCount();

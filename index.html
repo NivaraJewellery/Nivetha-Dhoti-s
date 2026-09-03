@@ -92,8 +92,15 @@
     <div class="modal-info">
       <p id="modalProductCode" class="modal-code"></p><h2 id="modalProductName"></h2><p id="modalCategory" class="modal-category"></p>
       <p id="modalPrice" class="modal-price"></p><p id="modalStock" class="modal-stock"></p><div id="modalDescription" class="modal-description"></div>
-      <button class="modal-primary" type="button">ADD TO CART — COMING NEXT</button>
-      <p class="modal-note">Retail storefront preview. Customer accounts, wholesale pricing and cart are added in later builds.</p>
+      <div class="modal-buy-row">
+        <div class="qty-control" aria-label="Quantity">
+          <button id="modalQtyMinus" type="button" aria-label="Decrease quantity">−</button>
+          <span id="modalQty">1</span>
+          <button id="modalQtyPlus" type="button" aria-label="Increase quantity">+</button>
+        </div>
+        <button id="modalAddToCart" class="modal-primary" type="button">ADD TO CART</button>
+      </div>
+      <p id="modalCartMessage" class="modal-cart-message" aria-live="polite"></p>
     </div>
   </section>
 </div>
