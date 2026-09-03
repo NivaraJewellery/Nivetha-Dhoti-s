@@ -289,7 +289,10 @@ function openModal(id) {
   }
 
   S.activeProductId = id;
-  S.modalQty = 1;
+
+  const cartItem = S.cart.find(item => +item.id === +id);
+  S.modalQty = cartItem ? Math.max(1, Number(cartItem.qty || 1)) : 1;
+
   if ($('modalCartMessage')) $('modalCartMessage').textContent = '';
   updateModalQuantity();
 
@@ -415,16 +418,23 @@ function productById(id) {
 }
 
 function reconcileCart() {
-  S.cart = S.cart
-    .map(item => {
-      const p = productById(item.id);
-      if (!p) return null;
-      const stock = Math.max(0, Number(p.stock || 0));
-      const qty = Math.min(Math.max(1, Number(item.qty || 1)), stock);
-      return stock > 0 ? { id: +p.id, qty } : null;
-    })
-    .filter(Boolean);
+  const merged = new Map();
 
+  S.cart.forEach(item => {
+    const p = productById(item.id);
+    if (!p) return;
+
+    const stock = Math.max(0, Number(p.stock || 0));
+    if (stock <= 0) return;
+
+    const id = +p.id;
+    const qty = Math.max(1, Number(item.qty || 1));
+    const current = merged.get(id) || 0;
+
+    merged.set(id, Math.min(stock, current + qty));
+  });
+
+  S.cart = [...merged.entries()].map(([id, qty]) => ({ id, qty }));
   saveCart();
 }
 
@@ -471,26 +481,35 @@ function addActiveProductToCart() {
   const stock = Math.max(0, Number(p.stock || 0));
   if (!stock) return;
 
+  const selectedQty = Math.min(stock, Math.max(1, Number(S.modalQty || 1)));
   const existing = S.cart.find(item => +item.id === +p.id);
-  const currentQty = existing ? Number(existing.qty || 0) : 0;
-  const nextQty = Math.min(stock, currentQty + S.modalQty);
+  const message = $('modalCartMessage');
 
   if (existing) {
-    existing.qty = nextQty;
+    const previousQty = Number(existing.qty || 1);
+
+    if (previousQty === selectedQty) {
+      if (message) {
+        message.textContent = `Already in cart · Quantity ${selectedQty}`;
+      }
+      return;
+    }
+
+    existing.qty = selectedQty;
+
+    if (message) {
+      message.textContent = `Cart quantity updated to ${selectedQty}.`;
+    }
   } else {
-    S.cart.push({ id: +p.id, qty: Math.min(S.modalQty, stock) });
+    S.cart.push({ id: +p.id, qty: selectedQty });
+
+    if (message) {
+      message.textContent = `Added to cart · Quantity ${selectedQty}`;
+    }
   }
 
   saveCart();
   renderCart();
-
-  const message = $('modalCartMessage');
-  if (message) {
-    message.textContent =
-      nextQty < currentQty + S.modalQty
-        ? `Cart updated to the maximum available stock (${stock}).`
-        : 'Added to cart.';
-  }
 }
 
 function changeCartQuantity(id, delta) {
