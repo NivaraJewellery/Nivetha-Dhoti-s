@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Customer Login | Nivetha Dhoti's</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="account.css">
+</head>
+<body>
+<header class="account-header"><a href="index.html"><img src="assets/nivetha-logo-approved.jpg" alt="Nivetha Dhoti's"></a><a href="index.html">Back to store</a></header>
+<main class="account-shell">
+  <section class="account-card">
+    <p class="eyebrow">CUSTOMER ACCOUNT</p>
+    <h1 id="accountTitle">Login to continue</h1>
+    <p id="accountIntro">Sign in before proceeding to secure checkout. Your shopping cart will be kept.</p>
+
+    <form id="loginForm" novalidate>
+      <label>Full name <input id="loginName" type="text" maxlength="80" autocomplete="name" placeholder="Your name"></label>
+      <label>Mobile number * <input id="loginMobile" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel" placeholder="10-digit mobile number" required></label>
+      <label>Email <input id="loginEmail" type="email" maxlength="120" autocomplete="email" placeholder="you@example.com"></label>
+      <p id="loginError" class="message" aria-live="polite"></p>
+      <button class="primary" type="submit">LOGIN & CONTINUE</button>
+    </form>
+
+    <div id="loggedInPanel" hidden>
+      <p class="welcome" id="welcomeText"></p>
+      <button id="continueShopping" class="primary" type="button">CONTINUE TO CHECKOUT</button>
+      <button id="logoutButton" class="secondary" type="button">LOGOUT</button>
+    </div>
+
+    <p class="auth-note">This build uses a local customer session for the storefront flow. Server-side OTP/account verification can be connected in the authentication build.</p>
+  </section>
+</main>
+<script src="account.js"></script>
+</body>
+</html>

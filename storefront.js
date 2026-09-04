@@ -23,6 +23,34 @@ function saveCart() {
 
 const $ = id => document.getElementById(id);
 
+const CUSTOMER_STORAGE_KEY = 'nivetha-customer';
+const RETURN_TO_CHECKOUT_KEY = 'nivetha-return-to-checkout';
+
+function getCustomer() {
+  try { return JSON.parse(localStorage.getItem(CUSTOMER_STORAGE_KEY) || 'null'); }
+  catch { return null; }
+}
+
+function isCustomerLoggedIn() {
+  const customer = getCustomer();
+  return Boolean(customer && (customer.mobile || customer.email));
+}
+
+function updateCustomerAccountLink() {
+  const link = $('customerAccountLink');
+  if (!link) return;
+  const customer = getCustomer();
+  link.href = 'account.html';
+  link.title = customer ? `Account: ${customer.name || customer.mobile || customer.email || 'Customer'}` : 'Login';
+  link.setAttribute('aria-label', customer ? 'Open customer account' : 'Login');
+}
+
+function redirectGuestToLogin() {
+  localStorage.setItem(RETURN_TO_CHECKOUT_KEY, '1');
+  window.location.href = 'account.html?return=checkout';
+}
+
+
 const money = v =>
   `₹${Number(v || 0).toLocaleString('en-IN', {
     maximumFractionDigits: 2
@@ -656,9 +684,26 @@ function closeModal() {
 
 
 function checkoutMoney(v){return `₹${Math.max(0,Number(v||0)).toLocaleString('en-IN')}`;}
-function checkoutSubtotalValue(){return S.cart.reduce((sum,item)=>{const p=productById(item.id);return p?sum+Number(p.price||0)*Number(item.qty||0):sum;},0);}
-function renderCheckoutSummary(){const box=$('checkoutItems');if(!box)return;box.innerHTML=S.cart.map(item=>{const p=productById(item.id);if(!p)return '';const q=Number(item.qty||0),pr=Number(p.price||0),img=p.image_1||'';return `<article class="checkout-item"><div class="checkout-item-image-wrap">${img?`<img src="${img}" alt="${p.code||'Product'}">`:''}</div><div class="checkout-item-info"><strong>${p.code||'Product'}</strong><span>Qty: ${q}</span><span>${checkoutMoney(pr)} each</span></div><strong class="checkout-item-total">${checkoutMoney(pr*q)}</strong></article>`;}).join('');const sub=checkoutSubtotalValue(),ship=S.cart.length?Number(STORE_CONFIG.shippingCharge||0):0;$('checkoutSubtotal').textContent=checkoutMoney(sub);$('checkoutShipping').textContent=ship?checkoutMoney(ship):'FREE';$('checkoutTotal').textContent=checkoutMoney(sub+ship);}
-function openCheckout(){if(!STORE_CONFIG.commerceEnabled||!S.cart.length)return;closeCart();renderCheckoutSummary();$('checkoutModal').hidden=false;document.body.classList.add('checkout-open');}
+function checkoutSubtotalValue(){return S.cart.reduce((sum,item)=>{const p=productById(item.id);return p?sum+Number(p.retail_price||0)*Number(item.qty||0):sum;},0);}
+function renderCheckoutSummary(){const box=$('checkoutItems');if(!box)return;box.innerHTML=S.cart.map(item=>{const p=productById(item.id);if(!p)return '';const q=Number(item.qty||0),pr=Number(p.retail_price||0),img=p.image_1||'';return `<article class="checkout-item"><div class="checkout-item-image-wrap">${img?`<img src="${img}" alt="${p.product_code||'Product'}">`:''}</div><div class="checkout-item-info"><strong>${p.product_code||'Product'}</strong><span>Qty: ${q}</span><span>${checkoutMoney(pr)} each</span></div><strong class="checkout-item-total">${checkoutMoney(pr*q)}</strong></article>`;}).join('');const sub=checkoutSubtotalValue(),ship=S.cart.length?Number(STORE_CONFIG.shippingCharge||0):0;$('checkoutSubtotal').textContent=checkoutMoney(sub);$('checkoutShipping').textContent=ship?checkoutMoney(ship):'FREE';$('checkoutTotal').textContent=checkoutMoney(sub+ship);}
+function openCheckout(){
+  if(!STORE_CONFIG.commerceEnabled||!S.cart.length)return;
+  if(!isCustomerLoggedIn()){
+    closeCart();
+    redirectGuestToLogin();
+    return;
+  }
+  closeCart();
+  renderCheckoutSummary();
+  const customer=getCustomer();
+  if(customer){
+    if($('checkoutName') && !$('checkoutName').value) $('checkoutName').value=customer.name||'';
+    if($('checkoutMobile') && !$('checkoutMobile').value) $('checkoutMobile').value=customer.mobile||'';
+    if($('checkoutEmail') && !$('checkoutEmail').value) $('checkoutEmail').value=customer.email||'';
+  }
+  $('checkoutModal').hidden=false;
+  document.body.classList.add('checkout-open');
+}
 function closeCheckout(){$('checkoutModal').hidden=true;document.body.classList.remove('checkout-open');}
 function setCheckoutError(n,m){const e=document.querySelector(`[data-error-for="${n}"]`);if(e)e.textContent=m;}
 function validateCheckoutForm(){document.querySelectorAll('[data-error-for]').forEach(e=>e.textContent='');const d={name:$('checkoutName').value.trim(),mobile:$('checkoutMobile').value.replace(/\D/g,''),email:$('checkoutEmail').value.trim(),address1:$('checkoutAddress1').value.trim(),city:$('checkoutCity').value.trim(),state:$('checkoutState').value,pincode:$('checkoutPincode').value.replace(/\D/g,'')};let ok=true;if(d.name.length<2){setCheckoutError('name','Enter the customer name.');ok=false;}if(!/^[6-9]\d{9}$/.test(d.mobile)){setCheckoutError('mobile','Enter a valid 10-digit Indian mobile number.');ok=false;}if(d.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)){setCheckoutError('email','Enter a valid email address.');ok=false;}if(d.address1.length<5){setCheckoutError('address1','Enter the delivery address.');ok=false;}if(d.city.length<2){setCheckoutError('city','Enter the city.');ok=false;}if(!d.state){setCheckoutError('state','Select the state.');ok=false;}if(!/^\d{6}$/.test(d.pincode)){setCheckoutError('pincode','Enter a valid 6-digit pincode.');ok=false;}return ok;}
@@ -702,6 +747,21 @@ document.addEventListener(
     $('checkoutPincode')?.addEventListener('input', e => { e.target.value=e.target.value.replace(/\D/g,'').slice(0,6); });
 
 
+    updateCustomerAccountLink();
+
+    const checkoutParams = new URLSearchParams(window.location.search);
+    const shouldResumeCheckout = checkoutParams.get('checkout') === '1' || localStorage.getItem(RETURN_TO_CHECKOUT_KEY) === '1';
+    if (shouldResumeCheckout && isCustomerLoggedIn()) {
+      localStorage.removeItem(RETURN_TO_CHECKOUT_KEY);
+      if (checkoutParams.has('checkout')) {
+        checkoutParams.delete('checkout');
+        const query = checkoutParams.toString();
+        window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+      }
+      // Products/cart are reconciled by load(); open checkout immediately after load completes below.
+      window.__nivethaResumeCheckout = true;
+    }
+
     updateCartCount();
 
     document
@@ -726,6 +786,11 @@ document.addEventListener(
       );
 
     applyCommerceMode();
-    load();
+    Promise.resolve(load()).then(() => {
+      if (window.__nivethaResumeCheckout && S.cart.length) {
+        window.__nivethaResumeCheckout = false;
+        openCheckout();
+      }
+    });
   }
 );
