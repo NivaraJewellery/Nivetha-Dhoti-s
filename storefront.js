@@ -1,3 +1,5 @@
+const STORE_CONFIG = { commerceEnabled: true, shippingCharge: 0 };
+
 const S = {
   products: [],
   cart: loadCart(),
@@ -652,6 +654,17 @@ function closeModal() {
     '';
 }
 
+
+function checkoutMoney(v){return `₹${Math.max(0,Number(v||0)).toLocaleString('en-IN')}`;}
+function checkoutSubtotalValue(){return S.cart.reduce((sum,item)=>{const p=productById(item.id);return p?sum+Number(p.price||0)*Number(item.qty||0):sum;},0);}
+function renderCheckoutSummary(){const box=$('checkoutItems');if(!box)return;box.innerHTML=S.cart.map(item=>{const p=productById(item.id);if(!p)return '';const q=Number(item.qty||0),pr=Number(p.price||0),img=p.image_1||'';return `<article class="checkout-item"><div class="checkout-item-image-wrap">${img?`<img src="${img}" alt="${p.code||'Product'}">`:''}</div><div class="checkout-item-info"><strong>${p.code||'Product'}</strong><span>Qty: ${q}</span><span>${checkoutMoney(pr)} each</span></div><strong class="checkout-item-total">${checkoutMoney(pr*q)}</strong></article>`;}).join('');const sub=checkoutSubtotalValue(),ship=S.cart.length?Number(STORE_CONFIG.shippingCharge||0):0;$('checkoutSubtotal').textContent=checkoutMoney(sub);$('checkoutShipping').textContent=ship?checkoutMoney(ship):'FREE';$('checkoutTotal').textContent=checkoutMoney(sub+ship);}
+function openCheckout(){if(!STORE_CONFIG.commerceEnabled||!S.cart.length)return;closeCart();renderCheckoutSummary();$('checkoutModal').hidden=false;document.body.classList.add('checkout-open');}
+function closeCheckout(){$('checkoutModal').hidden=true;document.body.classList.remove('checkout-open');}
+function setCheckoutError(n,m){const e=document.querySelector(`[data-error-for="${n}"]`);if(e)e.textContent=m;}
+function validateCheckoutForm(){document.querySelectorAll('[data-error-for]').forEach(e=>e.textContent='');const d={name:$('checkoutName').value.trim(),mobile:$('checkoutMobile').value.replace(/\D/g,''),email:$('checkoutEmail').value.trim(),address1:$('checkoutAddress1').value.trim(),city:$('checkoutCity').value.trim(),state:$('checkoutState').value,pincode:$('checkoutPincode').value.replace(/\D/g,'')};let ok=true;if(d.name.length<2){setCheckoutError('name','Enter the customer name.');ok=false;}if(!/^[6-9]\d{9}$/.test(d.mobile)){setCheckoutError('mobile','Enter a valid 10-digit Indian mobile number.');ok=false;}if(d.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)){setCheckoutError('email','Enter a valid email address.');ok=false;}if(d.address1.length<5){setCheckoutError('address1','Enter the delivery address.');ok=false;}if(d.city.length<2){setCheckoutError('city','Enter the city.');ok=false;}if(!d.state){setCheckoutError('state','Select the state.');ok=false;}if(!/^\d{6}$/.test(d.pincode)){setCheckoutError('pincode','Enter a valid 6-digit pincode.');ok=false;}return ok;}
+function handleCheckoutSubmit(e){e.preventDefault();$('checkoutFormMessage').textContent=validateCheckoutForm()?'Customer details validated. Order creation and payment will be connected in the next build.':'Please correct the highlighted fields.';}
+function applyCommerceMode(){document.documentElement.dataset.commerce=STORE_CONFIG.commerceEnabled?'on':'off';}
+
 document.addEventListener(
   'DOMContentLoaded',
   () => {
@@ -680,12 +693,14 @@ document.addEventListener(
     document.querySelectorAll('[data-close-cart]').forEach(x => {
       x.addEventListener('click', closeCart);
     });
+    $('checkoutButton')?.addEventListener('click', openCheckout);
+    $('checkoutClose')?.addEventListener('click', closeCheckout);
+    document.querySelectorAll('[data-checkout-close]').forEach(el => el.addEventListener('click', closeCheckout));
+    $('backToCartButton')?.addEventListener('click', () => { closeCheckout(); openCart(); });
+    $('checkoutForm')?.addEventListener('submit', handleCheckoutSubmit);
+    $('checkoutMobile')?.addEventListener('input', e => { e.target.value=e.target.value.replace(/\D/g,'').slice(0,10); });
+    $('checkoutPincode')?.addEventListener('input', e => { e.target.value=e.target.value.replace(/\D/g,'').slice(0,6); });
 
-    $('checkoutButton')?.addEventListener('click', () => {
-      if ($('checkoutMessage')) {
-        $('checkoutMessage').textContent = 'Checkout will be added in the next build.';
-      }
-    });
 
     updateCartCount();
 
@@ -705,10 +720,12 @@ document.addEventListener(
           if (e.key === 'Escape') {
             if (!$('productModal').hidden) closeModal();
             if ($('cartDrawer').classList.contains('open')) closeCart();
+            if (!$('checkoutModal').hidden) closeCheckout();
           }
         }
       );
 
+    applyCommerceMode();
     load();
   }
 );
