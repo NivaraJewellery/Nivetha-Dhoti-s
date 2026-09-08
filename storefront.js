@@ -17,6 +17,7 @@ function loadCart() {
 }
 
 function saveCart() {
+  resetCheckoutToken();
   localStorage.setItem('nivetha_cart', JSON.stringify(S.cart));
   updateCartCount();
 }
@@ -25,6 +26,8 @@ const $ = id => document.getElementById(id);
 
 const CUSTOMER_STORAGE_KEY = 'nivetha-customer';
 const RETURN_TO_CHECKOUT_KEY = 'nivetha-return-to-checkout';
+const CHECKOUT_TOKEN_KEY = 'nivetha-checkout-token';
+const LAST_ORDER_KEY = 'nivetha-last-order';
 
 function getCustomer() {
   try { return JSON.parse(localStorage.getItem(CUSTOMER_STORAGE_KEY) || 'null'); }
@@ -707,7 +710,67 @@ function openCheckout(){
 function closeCheckout(){$('checkoutModal').hidden=true;document.body.classList.remove('checkout-open');}
 function setCheckoutError(n,m){const e=document.querySelector(`[data-error-for="${n}"]`);if(e)e.textContent=m;}
 function validateCheckoutForm(){document.querySelectorAll('[data-error-for]').forEach(e=>e.textContent='');const d={name:$('checkoutName').value.trim(),mobile:$('checkoutMobile').value.replace(/\D/g,''),email:$('checkoutEmail').value.trim(),address1:$('checkoutAddress1').value.trim(),city:$('checkoutCity').value.trim(),state:$('checkoutState').value,pincode:$('checkoutPincode').value.replace(/\D/g,'')};let ok=true;if(d.name.length<2){setCheckoutError('name','Enter the customer name.');ok=false;}if(!/^[6-9]\d{9}$/.test(d.mobile)){setCheckoutError('mobile','Enter a valid 10-digit Indian mobile number.');ok=false;}if(d.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)){setCheckoutError('email','Enter a valid email address.');ok=false;}if(d.address1.length<5){setCheckoutError('address1','Enter the delivery address.');ok=false;}if(d.city.length<2){setCheckoutError('city','Enter the city.');ok=false;}if(!d.state){setCheckoutError('state','Select the state.');ok=false;}if(!/^\d{6}$/.test(d.pincode)){setCheckoutError('pincode','Enter a valid 6-digit pincode.');ok=false;}return ok;}
-function handleCheckoutSubmit(e){e.preventDefault();$('checkoutFormMessage').textContent=validateCheckoutForm()?'Customer details validated. Order creation and payment will be connected in the next build.':'Please correct the highlighted fields.';}
+function getCheckoutToken(){
+  let token=localStorage.getItem(CHECKOUT_TOKEN_KEY);
+  if(!token){
+    token=(window.crypto?.randomUUID?.() || `nd-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    localStorage.setItem(CHECKOUT_TOKEN_KEY,token);
+  }
+  return token;
+}
+function resetCheckoutToken(){localStorage.removeItem(CHECKOUT_TOKEN_KEY);}
+function checkoutCustomerPayload(){
+  return {
+    name:$('checkoutName').value.trim(),
+    mobile:$('checkoutMobile').value.replace(/\D/g,''),
+    email:$('checkoutEmail').value.trim(),
+    address1:$('checkoutAddress1').value.trim(),
+    address2:$('checkoutAddress2').value.trim(),
+    city:$('checkoutCity').value.trim(),
+    state:$('checkoutState').value,
+    pincode:$('checkoutPincode').value.replace(/\D/g,'')
+  };
+}
+async function handleCheckoutSubmit(e){
+  e.preventDefault();
+  const message=$('checkoutFormMessage');
+  if(!validateCheckoutForm()){
+    message.textContent='Please correct the highlighted fields.';
+    return;
+  }
+  if(!isCustomerLoggedIn()){
+    redirectGuestToLogin();
+    return;
+  }
+  const button=$('placeOrderButton');
+  button.disabled=true;
+  const previous=button.textContent;
+  button.textContent='CREATING ORDER...';
+  message.textContent='Checking stock and creating your order...';
+  try{
+    const response=await fetch('/api/orders',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        checkoutToken:getCheckoutToken(),
+        customer:checkoutCustomerPayload(),
+        items:S.cart.map(item=>({id:Number(item.id),qty:Number(item.qty||0)})),
+        shippingCharge:Number(STORE_CONFIG.shippingCharge||0)
+      })
+    });
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||'Unable to create order.');
+    const order=data.order||{};
+    localStorage.setItem(LAST_ORDER_KEY,JSON.stringify(order));
+    message.textContent=`Order ${order.order_number||''} created successfully. Payment integration is coming in the next build.`;
+    button.textContent='ORDER CREATED';
+    button.disabled=true;
+  }catch(error){
+    message.textContent=error.message||'Unable to create order. Please try again.';
+    button.textContent=previous;
+    button.disabled=false;
+  }
+}
 function applyCommerceMode(){document.documentElement.dataset.commerce=STORE_CONFIG.commerceEnabled?'on':'off';}
 
 document.addEventListener(
