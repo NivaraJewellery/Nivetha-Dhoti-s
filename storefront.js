@@ -2,7 +2,7 @@ const STORE_CONFIG = {
   commerceEnabled: false,
   portfolioMode: true,
   // Add the Nivetha Dhoti WhatsApp number in international format, digits only. Example: 919876543210
-  whatsappNumber: ''
+  whatsappNumber: '919789105558'
 };
 
 const S = {
