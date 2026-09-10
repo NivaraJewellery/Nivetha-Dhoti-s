@@ -1,12 +1,19 @@
 const CUSTOMER_STORAGE_KEY='nivetha-customer';
 const RETURN_TO_CHECKOUT_KEY='nivetha-return-to-checkout';
+const RETURN_TO_WHATSAPP_KEY='nivetha-return-to-whatsapp';
 const $=id=>document.getElementById(id);
 
 function getCustomer(){try{return JSON.parse(localStorage.getItem(CUSTOMER_STORAGE_KEY)||'null')}catch{return null}}
 function saveCustomer(customer){localStorage.setItem(CUSTOMER_STORAGE_KEY,JSON.stringify(customer))}
 function returnToStore(){
   const params=new URLSearchParams(window.location.search);
+  const wantsWhatsApp=params.get('return')==='whatsapp'||localStorage.getItem(RETURN_TO_WHATSAPP_KEY)==='1';
   const wantsCheckout=params.get('return')==='checkout'||localStorage.getItem(RETURN_TO_CHECKOUT_KEY)==='1';
+  if(wantsWhatsApp){
+    localStorage.removeItem(RETURN_TO_WHATSAPP_KEY);
+    window.location.href='index.html?whatsapp=1';
+    return;
+  }
   window.location.href=wantsCheckout?'index.html?checkout=1':'index.html';
 }
 function render(){
@@ -15,7 +22,7 @@ function render(){
   $('loggedInPanel').hidden=!customer;
   if(customer){
     $('accountTitle').textContent='Your account';
-    $('accountIntro').textContent='You are logged in. You can continue to checkout or return to the store.';
+    $('accountIntro').textContent='You are logged in. You can continue to your selected dhoti list or return to the catalogue.';
     $('welcomeText').textContent=`Welcome${customer.name?' '+customer.name:''}${customer.mobile?' · '+customer.mobile:''}`;
   }
 }
@@ -32,5 +39,5 @@ $('loginForm').addEventListener('submit',e=>{
   returnToStore();
 });
 $('continueShopping').addEventListener('click',returnToStore);
-$('logoutButton').addEventListener('click',()=>{localStorage.removeItem(CUSTOMER_STORAGE_KEY);localStorage.removeItem(RETURN_TO_CHECKOUT_KEY);render()});
+$('logoutButton').addEventListener('click',()=>{localStorage.removeItem(CUSTOMER_STORAGE_KEY);localStorage.removeItem(RETURN_TO_CHECKOUT_KEY);localStorage.removeItem(RETURN_TO_WHATSAPP_KEY);render()});
 render();

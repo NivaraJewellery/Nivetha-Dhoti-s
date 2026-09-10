@@ -1,4 +1,9 @@
-const STORE_CONFIG = { commerceEnabled: true, shippingCharge: 0 };
+const STORE_CONFIG = {
+  commerceEnabled: false,
+  portfolioMode: true,
+  // Add the Nivetha Dhoti WhatsApp number in international format, digits only. Example: 919876543210
+  whatsappNumber: ''
+};
 
 const S = {
   products: [],
@@ -26,6 +31,7 @@ const $ = id => document.getElementById(id);
 
 const CUSTOMER_STORAGE_KEY = 'nivetha-customer';
 const RETURN_TO_CHECKOUT_KEY = 'nivetha-return-to-checkout';
+const RETURN_TO_WHATSAPP_KEY = 'nivetha-return-to-whatsapp';
 const CHECKOUT_TOKEN_KEY = 'nivetha-checkout-token';
 const LAST_ORDER_KEY = 'nivetha-last-order';
 
@@ -51,6 +57,11 @@ function updateCustomerAccountLink() {
 function redirectGuestToLogin() {
   localStorage.setItem(RETURN_TO_CHECKOUT_KEY, '1');
   window.location.href = 'account.html?return=checkout';
+}
+
+function redirectGuestToLoginForWhatsApp() {
+  localStorage.setItem(RETURN_TO_WHATSAPP_KEY, '1');
+  window.location.href = 'account.html?return=whatsapp';
 }
 
 
@@ -262,17 +273,13 @@ function products() {
                 ${esc(p.product_code)}
               </p>
 
-              <strong class="product-price">
-                ${money(p.retail_price)}
-              </strong>
-
               <p
                 class="stock-line ${stock ? '' : 'out'}"
               >
                 ${
                   stock
-                    ? `In stock · ${esc(p.stock)}`
-                    : 'Out of stock'
+                    ? 'Available'
+                    : 'Currently unavailable'
                 }
               </p>
 
@@ -340,15 +347,15 @@ function openModal(id) {
   $('modalCategory').textContent =
     p.category || '';
 
-  $('modalPrice').textContent =
-    money(p.retail_price);
+  $('modalPrice').textContent = '';
+  $('modalPrice').hidden = true;
 
   const stock =
     Number(p.stock || 0) > 0;
 
   $('modalStock').textContent = stock
-    ? `In stock · ${p.stock} available`
-    : 'Currently out of stock';
+    ? 'Available'
+    : 'Currently unavailable';
 
   $('modalStock')
     .classList
@@ -501,7 +508,7 @@ function updateModalQuantity() {
     add.disabled = stock <= 0 || S.modalQty <= 0;
     add.textContent = stock <= 0 ? 'OUT OF STOCK'
       : S.modalQty <= 0 ? 'SELECT QUANTITY'
-      : 'ADD TO CART';
+      : 'ADD TO LIST';
   }
 }
 
@@ -543,7 +550,7 @@ function addActiveProductToCart() {
 
     if (previousQty === selectedQty) {
       if (message) {
-        message.textContent = `Already in cart · Quantity ${selectedQty}`;
+        message.textContent = `Already in your list · Quantity ${selectedQty}`;
       }
       return;
     }
@@ -551,13 +558,13 @@ function addActiveProductToCart() {
     existing.qty = selectedQty;
 
     if (message) {
-      message.textContent = `Cart quantity updated to ${selectedQty}.`;
+      message.textContent = `List quantity updated to ${selectedQty}.`;
     }
   } else {
     S.cart.push({ id: +p.id, qty: selectedQty });
 
     if (message) {
-      message.textContent = `Added to cart · Quantity ${selectedQty}`;
+      message.textContent = `Added to your list · Quantity ${selectedQty}`;
     }
   }
 
@@ -608,10 +615,8 @@ function renderCart() {
 
   const itemsEl = $('cartItems');
   const subtotalEl = $('cartSubtotal');
-  const checkout = $('checkoutButton');
+  const sendButton = $('checkoutButton');
   if (!itemsEl || !subtotalEl) return;
-
-  let subtotal = 0;
 
   const rows = S.cart.map(item => {
     const p = productById(item.id);
@@ -619,8 +624,6 @@ function renderCart() {
 
     const qty = Math.max(1, Number(item.qty || 1));
     const stock = Math.max(0, Number(p.stock || 0));
-    const price = Number(p.retail_price || 0);
-    subtotal += price * qty;
 
     return `
       <article class="cart-item">
@@ -629,8 +632,8 @@ function renderCart() {
         </div>
         <div class="cart-item-info">
           <p class="cart-item-code">${esc(p.product_code || '')}</p>
-          <strong>${money(price)}</strong>
-          <small>${stock} available</small>
+          ${p.category ? `<small>${esc(p.category)}</small>` : ''}
+          <small>${stock > 0 ? 'Available' : 'Currently unavailable'}</small>
           <div class="cart-item-actions">
             <div class="qty-control small">
               <button type="button" data-cart-minus="${p.id}" aria-label="Decrease quantity">−</button>
@@ -645,10 +648,10 @@ function renderCart() {
   }).join('');
 
   itemsEl.innerHTML = rows ||
-    '<div class="cart-empty"><span>🛒</span><p>Your cart is empty.</p><small>Add a dhoti from the collection to begin.</small></div>';
+    '<div class="cart-empty"><span>♡</span><p>Your dhoti list is empty.</p><small>Select the dhotis you like and add them to your list.</small></div>';
 
-  subtotalEl.textContent = money(subtotal);
-  if (checkout) checkout.disabled = S.cart.length === 0;
+  subtotalEl.textContent = String(cartQuantity());
+  if (sendButton) sendButton.disabled = S.cart.length === 0;
 
   itemsEl.querySelectorAll('[data-cart-minus]').forEach(b => {
     b.onclick = () => changeCartQuantity(+b.dataset.cartMinus, -1);
@@ -685,6 +688,58 @@ function closeModal() {
     '';
 }
 
+
+function buildWhatsAppRequestMessage() {
+  const customer = getCustomer() || {};
+  const lines = [
+    "Hello Nivetha Dhoti's,",
+    '',
+    'I am interested in the following dhotis:',
+    ''
+  ];
+
+  S.cart.forEach((item, index) => {
+    const p = productById(item.id);
+    if (!p) return;
+    const qty = Math.max(1, Number(item.qty || 1));
+    const parts = [
+      `${index + 1}. ${p.product_code || 'Dhoti'}`,
+      p.category ? `Collection: ${p.category}` : '',
+      `Qty: ${qty}`
+    ].filter(Boolean);
+    lines.push(parts.join(' | '));
+  });
+
+  lines.push('', 'Customer details:');
+  if (customer.name) lines.push(`Name: ${customer.name}`);
+  if (customer.mobile) lines.push(`Mobile: ${customer.mobile}`);
+  if (customer.email) lines.push(`Email: ${customer.email}`);
+  lines.push('', 'Please confirm availability and share the details. Thank you.');
+  return lines.join('\n');
+}
+
+function sendWhatsAppRequest() {
+  const message = $('checkoutMessage');
+  if (!S.cart.length) return;
+
+  if (!isCustomerLoggedIn()) {
+    redirectGuestToLoginForWhatsApp();
+    return;
+  }
+
+  const number = String(STORE_CONFIG.whatsappNumber || '').replace(/\D/g, '');
+  if (!/^\d{10,15}$/.test(number)) {
+    if (message) {
+      message.textContent = 'Nivetha WhatsApp number is not configured yet. Add it in STORE_CONFIG.whatsappNumber.';
+    }
+    return;
+  }
+
+  const text = encodeURIComponent(buildWhatsAppRequestMessage());
+  const url = `https://wa.me/${number}?text=${text}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
+  if (message) message.textContent = 'WhatsApp request opened. Review the message and tap Send.';
+}
 
 function checkoutMoney(v){return `₹${Math.max(0,Number(v||0)).toLocaleString('en-IN')}`;}
 function checkoutSubtotalValue(){return S.cart.reduce((sum,item)=>{const p=productById(item.id);return p?sum+Number(p.retail_price||0)*Number(item.qty||0):sum;},0);}
@@ -923,7 +978,10 @@ async function handleCheckoutSubmit(e){
     else setCheckoutProcessing(true,'CONTACT SUPPORT');
   }
 }
-function applyCommerceMode(){document.documentElement.dataset.commerce=STORE_CONFIG.commerceEnabled?'on':'off';}
+function applyCommerceMode(){
+  document.documentElement.dataset.commerce=STORE_CONFIG.commerceEnabled?'on':'off';
+  document.documentElement.dataset.portfolio=STORE_CONFIG.portfolioMode?'on':'off';
+}
 
 document.addEventListener(
   'DOMContentLoaded',
@@ -953,28 +1011,21 @@ document.addEventListener(
     document.querySelectorAll('[data-close-cart]').forEach(x => {
       x.addEventListener('click', closeCart);
     });
-    $('checkoutButton')?.addEventListener('click', openCheckout);
-    $('checkoutClose')?.addEventListener('click', closeCheckout);
-    document.querySelectorAll('[data-checkout-close]').forEach(el => el.addEventListener('click', closeCheckout));
-    $('backToCartButton')?.addEventListener('click', () => { closeCheckout(); openCart(); });
-    $('checkoutForm')?.addEventListener('submit', handleCheckoutSubmit);
-    $('checkoutMobile')?.addEventListener('input', e => { e.target.value=e.target.value.replace(/\D/g,'').slice(0,10); });
-    $('checkoutPincode')?.addEventListener('input', e => { e.target.value=e.target.value.replace(/\D/g,'').slice(0,6); });
+    $('checkoutButton')?.addEventListener('click', sendWhatsAppRequest);
 
 
     updateCustomerAccountLink();
 
-    const checkoutParams = new URLSearchParams(window.location.search);
-    const shouldResumeCheckout = checkoutParams.get('checkout') === '1' || localStorage.getItem(RETURN_TO_CHECKOUT_KEY) === '1';
-    if (shouldResumeCheckout && isCustomerLoggedIn()) {
-      localStorage.removeItem(RETURN_TO_CHECKOUT_KEY);
-      if (checkoutParams.has('checkout')) {
-        checkoutParams.delete('checkout');
-        const query = checkoutParams.toString();
+    const returnParams = new URLSearchParams(window.location.search);
+    const shouldResumeWhatsApp = returnParams.get('whatsapp') === '1' || localStorage.getItem(RETURN_TO_WHATSAPP_KEY) === '1';
+    if (shouldResumeWhatsApp && isCustomerLoggedIn()) {
+      localStorage.removeItem(RETURN_TO_WHATSAPP_KEY);
+      if (returnParams.has('whatsapp')) {
+        returnParams.delete('whatsapp');
+        const query = returnParams.toString();
         window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
       }
-      // Products/cart are reconciled by load(); open checkout immediately after load completes below.
-      window.__nivethaResumeCheckout = true;
+      window.__nivethaResumeWhatsApp = true;
     }
 
     updateCartCount();
@@ -995,16 +1046,16 @@ document.addEventListener(
           if (e.key === 'Escape') {
             if (!$('productModal').hidden) closeModal();
             if ($('cartDrawer').classList.contains('open')) closeCart();
-            if (!$('checkoutModal').hidden) closeCheckout();
           }
         }
       );
 
     applyCommerceMode();
     Promise.resolve(load()).then(() => {
-      if (window.__nivethaResumeCheckout && S.cart.length) {
-        window.__nivethaResumeCheckout = false;
-        openCheckout();
+      if (window.__nivethaResumeWhatsApp && S.cart.length) {
+        window.__nivethaResumeWhatsApp = false;
+        openCart();
+        if ($('checkoutMessage')) $('checkoutMessage').textContent = 'Login complete. Review your list and send the request on WhatsApp.';
       }
     });
   }
