@@ -9,7 +9,7 @@ const S = {
   products: [],
   cart: loadCart(),
   activeProductId: null,
-  modalQty: 1
+  enquiryType: localStorage.getItem('nivetha-enquiry-type') || 'retail'
 };
 
 function loadCart() {
@@ -330,11 +330,8 @@ function openModal(id) {
 
   S.activeProductId = id;
 
-  const existingCartItem = S.cart.find(item => +item.id === +id);
-  S.modalQty = existingCartItem ? Math.max(0, Number(existingCartItem.qty || 0)) : 0;
-
   if ($('modalCartMessage')) $('modalCartMessage').textContent = '';
-  updateModalQuantity();
+  updateEnquiryButton();
 
   $('modalProductCode').textContent =
     p.product_code || '';
@@ -350,19 +347,10 @@ function openModal(id) {
   $('modalPrice').textContent = '';
   $('modalPrice').hidden = true;
 
-  const stock =
-    Number(p.stock || 0) > 0;
-
-  $('modalStock').textContent = stock
-    ? 'Available'
-    : 'Currently unavailable';
-
-  $('modalStock')
-    .classList
-    .toggle(
-      'out',
-      !stock
-    );
+  // Portfolio enquiry mode: availability is confirmed by the seller on WhatsApp.
+  $('modalStock').textContent = '';
+  $('modalStock').hidden = true;
+  $('modalStock').classList.remove('out');
 
   $('modalDescription').textContent =
     p.description ||
@@ -458,145 +446,60 @@ function productById(id) {
 }
 
 function reconcileCart() {
-  const merged = new Map();
+  const selectedIds = new Set();
 
   S.cart.forEach(item => {
     const p = productById(item.id);
     if (!p) return;
-
-    const stock = Math.max(0, Number(p.stock || 0));
-    if (stock <= 0) return;
-
-    const id = +p.id;
-    const qty = Math.max(1, Number(item.qty || 1));
-    const current = merged.get(id) || 0;
-
-    merged.set(id, Math.min(stock, current + qty));
+    selectedIds.add(+p.id);
   });
 
-  S.cart = [...merged.entries()].map(([id, qty]) => ({ id, qty }));
+  // Keep one entry per selected model. Quantity is intentionally not used in portfolio mode.
+  S.cart = [...selectedIds].map(id => ({ id, qty: 1 }));
   saveCart();
 }
 
 function cartQuantity() {
-  return S.cart.reduce((sum, item) => sum + Number(item.qty || 0), 0);
+  return S.cart.length;
 }
 
 function updateCartCount() {
   const el = $('cartCount');
-  if (el) el.textContent = cartQuantity();
+  if (el) el.textContent = String(S.cart.length);
 }
 
-function updateModalQuantity() {
-  const p = productById(S.activeProductId);
-  const stock = p ? Math.max(0, Number(p.stock || 0)) : 0;
-  const input = $('modalQty');
-  const minus = $('modalQtyMinus');
-  const plus = $('modalQtyPlus');
+function isInEnquiry(id) {
+  return S.cart.some(item => +item.id === +id);
+}
+
+function updateEnquiryButton() {
   const add = $('modalAddToCart');
-
-  if (input) {
-    input.value = String(S.modalQty);
-    input.min = '0';
-    input.max = String(stock);
-  }
-
-  if (minus) minus.disabled = S.modalQty <= 0;
-  if (plus) plus.disabled = S.modalQty >= stock;
-
-  if (add) {
-    add.disabled = stock <= 0 || S.modalQty <= 0;
-    add.textContent = stock <= 0 ? 'OUT OF STOCK'
-      : S.modalQty <= 0 ? 'SELECT QUANTITY'
-      : 'ADD TO LIST';
-  }
+  if (!add) return;
+  const selected = isInEnquiry(S.activeProductId);
+  add.disabled = false;
+  add.classList.toggle('selected', selected);
+  add.textContent = selected ? '✓ ADDED TO ENQUIRY' : 'ADD TO ENQUIRY';
+  add.setAttribute('aria-pressed', selected ? 'true' : 'false');
 }
 
-function setModalQuantity(value) {
-  const p = productById(S.activeProductId);
-  const stock = p ? Math.max(0, Number(p.stock || 0)) : 0;
-  let qty = Number.parseInt(value, 10);
-  if (Number.isNaN(qty)) qty = 0;
-  S.modalQty = Math.min(stock, Math.max(0, qty));
-  updateModalQuantity();
-}
-function changeModalQuantity(delta) {
-  const p = productById(S.activeProductId);
-  if (!p) return;
-  const stock = Math.max(0, Number(p.stock || 0));
-  S.modalQty = Math.min(stock, Math.max(0, Number(S.modalQty || 0) + delta));
-  updateModalQuantity();
-}
 function addActiveProductToCart() {
   const p = productById(S.activeProductId);
   if (!p) return;
 
-  const stock = Math.max(0, Number(p.stock || 0));
-  const selectedQty = Math.min(
-    stock,
-    Math.max(0, Number(S.modalQty || 0))
-  );
-
-  if (!stock || selectedQty <= 0) {
-    updateModalQuantity();
-    return;
-  }
-
-  const existing = S.cart.find(item => +item.id === +p.id);
   const message = $('modalCartMessage');
+  const existingIndex = S.cart.findIndex(item => +item.id === +p.id);
 
-  if (existing) {
-    const previousQty = Math.max(0, Number(existing.qty || 0));
-
-    if (previousQty === selectedQty) {
-      if (message) {
-        message.textContent = `Already in your list · Quantity ${selectedQty}`;
-      }
-      return;
-    }
-
-    existing.qty = selectedQty;
-
-    if (message) {
-      message.textContent = `List quantity updated to ${selectedQty}.`;
-    }
-  } else {
-    S.cart.push({ id: +p.id, qty: selectedQty });
-
-    if (message) {
-      message.textContent = `Added to your list · Quantity ${selectedQty}`;
-    }
-  }
-
-  saveCart();
-  renderCart();
-
-  // Keep the selector synced with the quantity now stored in cart.
-  S.modalQty = selectedQty;
-  updateModalQuantity();
-}
-
-function changeCartQuantity(id, delta) {
-  const item = S.cart.find(x => +x.id === +id);
-  const p = productById(id);
-  if (!item || !p) return;
-
-  const stock = Math.max(0, Number(p.stock || 0));
-  const next = Number(item.qty || 0) + delta;
-
-  if (next <= 0) {
-    removeFromCart(id);
+  if (existingIndex >= 0) {
+    if (message) message.textContent = 'This model is already in your enquiry.';
+    updateEnquiryButton();
     return;
   }
 
-  item.qty = Math.min(next, stock);
+  S.cart.push({ id: +p.id, qty: 1 });
   saveCart();
   renderCart();
-
-  if (+S.activeProductId === +id && !$('productModal').hidden) {
-    S.modalQty = item.qty;
-    updateModalQuantity();
-  }
+  updateEnquiryButton();
+  if (message) message.textContent = 'Added to your enquiry list.';
 }
 
 function removeFromCart(id) {
@@ -605,9 +508,16 @@ function removeFromCart(id) {
   renderCart();
 
   if (+S.activeProductId === +id && !$('productModal').hidden) {
-    S.modalQty = 0;
-    updateModalQuantity();
+    updateEnquiryButton();
+    const message = $('modalCartMessage');
+    if (message) message.textContent = 'Removed from your enquiry list.';
   }
+}
+
+function renderEnquiryType() {
+  document.querySelectorAll('[name="enquiryType"]').forEach(input => {
+    input.checked = input.value === S.enquiryType;
+  });
 }
 
 function renderCart() {
@@ -622,9 +532,6 @@ function renderCart() {
     const p = productById(item.id);
     if (!p) return '';
 
-    const qty = Math.max(1, Number(item.qty || 1));
-    const stock = Math.max(0, Number(p.stock || 0));
-
     return `
       <article class="cart-item">
         <div class="cart-item-image">
@@ -633,13 +540,7 @@ function renderCart() {
         <div class="cart-item-info">
           <p class="cart-item-code">${esc(p.product_code || '')}</p>
           ${p.category ? `<small>${esc(p.category)}</small>` : ''}
-          <small>${stock > 0 ? 'Available' : 'Currently unavailable'}</small>
           <div class="cart-item-actions">
-            <div class="qty-control small">
-              <button type="button" data-cart-minus="${p.id}" aria-label="Decrease quantity">−</button>
-              <span>${qty}</span>
-              <button type="button" data-cart-plus="${p.id}" aria-label="Increase quantity" ${qty >= stock ? 'disabled' : ''}>+</button>
-            </div>
             <button class="cart-remove" type="button" data-cart-remove="${p.id}">REMOVE</button>
           </div>
         </div>
@@ -648,18 +549,11 @@ function renderCart() {
   }).join('');
 
   itemsEl.innerHTML = rows ||
-    '<div class="cart-empty"><span>♡</span><p>Your dhoti list is empty.</p><small>Select the dhotis you like and add them to your list.</small></div>';
+    '<div class="cart-empty"><span>♡</span><p>Your enquiry list is empty.</p><small>Open a dhoti and tap Add to Enquiry.</small></div>';
 
-  subtotalEl.textContent = String(cartQuantity());
+  subtotalEl.textContent = String(S.cart.length);
   if (sendButton) sendButton.disabled = S.cart.length === 0;
-
-  itemsEl.querySelectorAll('[data-cart-minus]').forEach(b => {
-    b.onclick = () => changeCartQuantity(+b.dataset.cartMinus, -1);
-  });
-
-  itemsEl.querySelectorAll('[data-cart-plus]').forEach(b => {
-    b.onclick = () => changeCartQuantity(+b.dataset.cartPlus, 1);
-  });
+  renderEnquiryType();
 
   itemsEl.querySelectorAll('[data-cart-remove]').forEach(b => {
     b.onclick = () => removeFromCart(+b.dataset.cartRemove);
@@ -701,20 +595,19 @@ function buildWhatsAppRequestMessage() {
   S.cart.forEach((item, index) => {
     const p = productById(item.id);
     if (!p) return;
-    const qty = Math.max(1, Number(item.qty || 1));
     const parts = [
       `${index + 1}. ${p.product_code || 'Dhoti'}`,
-      p.category ? `Collection: ${p.category}` : '',
-      `Qty: ${qty}`
+      p.category ? `Collection: ${p.category}` : ''
     ].filter(Boolean);
     lines.push(parts.join(' | '));
   });
 
+  lines.push('', `Enquiry type: ${S.enquiryType === 'wholesale' ? 'Wholesale' : 'Retail'}`);
   lines.push('', 'Customer details:');
   if (customer.name) lines.push(`Name: ${customer.name}`);
   if (customer.mobile) lines.push(`Mobile: ${customer.mobile}`);
   if (customer.email) lines.push(`Email: ${customer.email}`);
-  lines.push('', 'Please confirm availability and share the details. Thank you.');
+  lines.push('', 'Please confirm availability and share the price/details for the selected models. Thank you.');
   return lines.join('\n');
 }
 
@@ -999,12 +892,15 @@ document.addEventListener(
         products
       );
 
-    $('modalQtyMinus')?.addEventListener('click', () => changeModalQuantity(-1));
-    $('modalQtyPlus')?.addEventListener('click', () => changeModalQuantity(1));
-
-    $('modalQty')?.addEventListener('input', e => setModalQuantity(e.target.value));
-    $('modalQty')?.addEventListener('change', e => setModalQuantity(e.target.value));
     $('modalAddToCart')?.addEventListener('click', addActiveProductToCart);
+
+    document.querySelectorAll('[name="enquiryType"]').forEach(input => {
+      input.addEventListener('change', e => {
+        S.enquiryType = e.target.value === 'wholesale' ? 'wholesale' : 'retail';
+        localStorage.setItem('nivetha-enquiry-type', S.enquiryType);
+        renderEnquiryType();
+      });
+    });
 
     $('cartButton')?.addEventListener('click', openCart);
 

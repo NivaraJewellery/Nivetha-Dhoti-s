@@ -676,3 +676,24 @@ html[data-portfolio="on"] .checkout-button { background:#1f6f43; color:#fff; bor
 html[data-portfolio="on"] .checkout-button::before { content:'◉'; margin-right:8px; }
 html[data-portfolio="on"] .cart-shipping-note { line-height:1.55; }
 html[data-portfolio="on"] .cart-item-info > strong { display:none!important; }
+
+
+/* ========================================
+   BUILD 15 — QUANTITY-FREE ENQUIRY FLOW
+======================================== */
+html[data-portfolio="on"] .modal-stock { display:none!important; }
+html[data-portfolio="on"] .enquiry-action-row { display:block; }
+html[data-portfolio="on"] .enquiry-button { width:100%; min-height:52px; }
+html[data-portfolio="on"] .enquiry-button.selected {
+  background:#f2eadf;
+  color:#4a2714;
+  border:1px solid #8d633a;
+}
+.enquiry-type { border:0; padding:0; margin:16px 0 12px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.enquiry-type legend { grid-column:1/-1; padding:0 0 8px; font-size:12px; letter-spacing:.12em; font-weight:700; color:#7f5a3b; }
+.enquiry-type label { position:relative; cursor:pointer; }
+.enquiry-type input { position:absolute; opacity:0; pointer-events:none; }
+.enquiry-type span { display:flex; align-items:center; justify-content:center; min-height:44px; border:1px solid #cdb49a; border-radius:8px; font-weight:700; background:#fffaf4; }
+.enquiry-type input:checked + span { background:#4a2714; color:#fff; border-color:#4a2714; }
+html[data-portfolio="on"] .cart-item-actions { margin-top:10px; }
+html[data-portfolio="on"] .cart-remove { min-height:38px; padding:0 14px; }
