@@ -653,3 +653,14 @@
 /* Customer login/account link */
 .customer-account-link{display:inline-flex;align-items:center;justify-content:center;color:inherit;text-decoration:none;line-height:1;cursor:pointer}
 .customer-account-link:hover{opacity:.72}
+
+/* Build 13 payment feedback */
+.checkout-form-message.success {
+  color: #1f6b3a;
+  font-weight: 700;
+}
+.checkout-primary:disabled,
+.checkout-secondary:disabled {
+  opacity: .68;
+  cursor: not-allowed;
+}

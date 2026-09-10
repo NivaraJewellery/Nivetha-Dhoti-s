@@ -17,6 +17,10 @@
       "destination": "/api/index.js?route=orders"
     },
     {
+      "source": "/api/payments",
+      "destination": "/api/index.js?route=payments"
+    },
+    {
       "source": "/admin",
       "destination": "/admin.html"
     }

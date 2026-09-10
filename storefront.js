@@ -698,6 +698,10 @@ function openCheckout(){
   }
   closeCart();
   renderCheckoutSummary();
+  $('checkoutFormMessage')?.classList.remove('success');
+  if($('checkoutFormMessage')) $('checkoutFormMessage').textContent='';
+  $('backToCartButton')?.removeAttribute('disabled');
+  setCheckoutProcessing(false,'PAY NOW');
   const customer=getCustomer();
   if(customer){
     if($('checkoutName') && !$('checkoutName').value) $('checkoutName').value=customer.name||'';
@@ -731,24 +735,147 @@ function checkoutCustomerPayload(){
     pincode:$('checkoutPincode').value.replace(/\D/g,'')
   };
 }
+function setCheckoutProcessing(isProcessing, label = ''){
+  const button=$('placeOrderButton');
+  if(!button)return;
+  button.disabled=Boolean(isProcessing);
+  button.textContent=label || (isProcessing ? 'PROCESSING...' : 'PAY NOW');
+}
+
+async function markPaymentFailed(order, error = {}){
+  try{
+    await fetch('/api/payments',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        action:'failed',
+        orderId:Number(order?.id||0),
+        checkoutToken:getCheckoutToken(),
+        code:error.code||error.error?.code||'',
+        description:error.description||error.error?.description||''
+      })
+    });
+  }catch(_error){ /* best-effort status update only */ }
+}
+
+function finishPaidCheckout(order){
+  const message=$('checkoutFormMessage');
+  const orderNumber=order?.order_number||'';
+  const paymentId=order?.razorpay_payment_id||'';
+  localStorage.setItem(LAST_ORDER_KEY,JSON.stringify(order||{}));
+  S.cart=[];
+  localStorage.removeItem('nivetha_cart');
+  resetCheckoutToken();
+  renderCart();
+  if(message){
+    message.textContent=`Payment successful. Order ${orderNumber} is confirmed${paymentId?` · Payment ${paymentId}`:''}.`;
+    message.classList.add('success');
+  }
+  setCheckoutProcessing(true,'ORDER CONFIRMED');
+  $('backToCartButton')?.setAttribute('disabled','disabled');
+}
+
+async function verifyRazorpayPayment(order, paymentResponse){
+  const response=await fetch('/api/payments',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      action:'verify',
+      orderId:Number(order?.id||0),
+      checkoutToken:getCheckoutToken(),
+      razorpay_order_id:paymentResponse.razorpay_order_id,
+      razorpay_payment_id:paymentResponse.razorpay_payment_id,
+      razorpay_signature:paymentResponse.razorpay_signature
+    })
+  });
+  const data=await response.json();
+  if(!response.ok){
+    const error=new Error(data.error||'Payment verification failed.');
+    error.paymentReceived=Boolean(data.paymentReceived);
+    error.order=data.order||null;
+    throw error;
+  }
+  return data.order||order;
+}
+
+async function openRazorpayCheckout(paymentData, order){
+  const message=$('checkoutFormMessage');
+  if(typeof window.Razorpay!=='function'){
+    throw new Error('Payment window could not be loaded. Please check your connection and try again.');
+  }
+
+  return await new Promise((resolve,reject)=>{
+    let finished=false;
+    const customer=checkoutCustomerPayload();
+    const razorpay=new window.Razorpay({
+      key:paymentData.keyId,
+      amount:paymentData.amount,
+      currency:paymentData.currency||'INR',
+      name:paymentData.name||"Nivetha Dhoti's",
+      description:paymentData.description||`Order ${order?.order_number||''}`,
+      order_id:paymentData.razorpayOrderId,
+      prefill:{
+        name:customer.name||'',
+        email:customer.email||'',
+        contact:customer.mobile||''
+      },
+      notes:{
+        nivetha_order_number:order?.order_number||''
+      },
+      theme:{color:'#5b2f18'},
+      modal:{
+        ondismiss:()=>{
+          if(finished)return;
+          finished=true;
+          const error=new Error('Payment was not completed. Your order is still pending and you can retry payment.');
+          error.dismissed=true;
+          reject(error);
+        }
+      },
+      handler:async paymentResponse=>{
+        if(finished)return;
+        finished=true;
+        try{
+          if(message)message.textContent='Payment received. Verifying securely...';
+          setCheckoutProcessing(true,'VERIFYING PAYMENT...');
+          const verifiedOrder=await verifyRazorpayPayment(order,paymentResponse);
+          resolve(verifiedOrder);
+        }catch(error){
+          reject(error);
+        }
+      }
+    });
+
+    razorpay.on('payment.failed',async response=>{
+      if(finished)return;
+      finished=true;
+      await markPaymentFailed(order,response?.error||response||{});
+      const reason=response?.error?.description||'Payment failed. Please try again.';
+      reject(new Error(reason));
+    });
+
+    razorpay.open();
+  });
+}
+
 async function handleCheckoutSubmit(e){
   e.preventDefault();
   const message=$('checkoutFormMessage');
+  message?.classList.remove('success');
   if(!validateCheckoutForm()){
-    message.textContent='Please correct the highlighted fields.';
+    if(message)message.textContent='Please correct the highlighted fields.';
     return;
   }
   if(!isCustomerLoggedIn()){
     redirectGuestToLogin();
     return;
   }
-  const button=$('placeOrderButton');
-  button.disabled=true;
-  const previous=button.textContent;
-  button.textContent='CREATING ORDER...';
-  message.textContent='Checking stock and creating your order...';
+
+  setCheckoutProcessing(true,'PREPARING PAYMENT...');
+  if(message)message.textContent='Checking stock and preparing secure payment...';
+
   try{
-    const response=await fetch('/api/orders',{
+    const orderResponse=await fetch('/api/orders',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
@@ -758,17 +885,42 @@ async function handleCheckoutSubmit(e){
         shippingCharge:Number(STORE_CONFIG.shippingCharge||0)
       })
     });
-    const data=await response.json();
-    if(!response.ok)throw new Error(data.error||'Unable to create order.');
-    const order=data.order||{};
+    const orderData=await orderResponse.json();
+    if(!orderResponse.ok)throw new Error(orderData.error||'Unable to prepare order.');
+    const order=orderData.order||{};
     localStorage.setItem(LAST_ORDER_KEY,JSON.stringify(order));
-    message.textContent=`Order ${order.order_number||''} created successfully. Payment integration is coming in the next build.`;
-    button.textContent='ORDER CREATED';
-    button.disabled=true;
+
+    if(message)message.textContent=`Order ${order.order_number||''} prepared. Opening secure payment...`;
+
+    const paymentResponse=await fetch('/api/payments',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        action:'create',
+        orderId:Number(order.id||0),
+        checkoutToken:getCheckoutToken()
+      })
+    });
+    const paymentData=await paymentResponse.json();
+    if(!paymentResponse.ok)throw new Error(paymentData.error||'Unable to start payment.');
+
+    if(paymentData.alreadyPaid){
+      finishPaidCheckout(paymentData.order||order);
+      return;
+    }
+
+    setCheckoutProcessing(true,'PAYMENT OPEN...');
+    if(message)message.textContent='Complete the payment in the Razorpay window.';
+    const verifiedOrder=await openRazorpayCheckout(paymentData,order);
+    finishPaidCheckout(verifiedOrder);
   }catch(error){
-    message.textContent=error.message||'Unable to create order. Please try again.';
-    button.textContent=previous;
-    button.disabled=false;
+    if(message){
+      message.textContent=error.paymentReceived
+        ? (error.message||'Payment received, but the order needs manual attention. Please contact support.')
+        : (error.message||'Unable to complete payment. Please try again.');
+    }
+    if(!error.paymentReceived)setCheckoutProcessing(false,'RETRY PAYMENT');
+    else setCheckoutProcessing(true,'CONTACT SUPPORT');
   }
 }
 function applyCommerceMode(){document.documentElement.dataset.commerce=STORE_CONFIG.commerceEnabled?'on':'off';}
