@@ -1,3 +1,4 @@
+console.info('Nivetha Build 21 - QR modal close fix');
 const STORE_CONFIG = {
   commerceEnabled: false,
   portfolioMode: true,
@@ -658,32 +659,28 @@ function openWhatsAppQr(url) {
   }
 
   openLink.href = url;
-  modal.style.removeProperty('display');
   modal.hidden = false;
   modal.removeAttribute('hidden');
   modal.setAttribute('aria-hidden', 'false');
+  modal.classList.add('is-open');
   document.body.classList.add('whatsapp-qr-open');
   setWhatsAppQrSource(image, url, status);
 }
 
 function closeWhatsAppQr(event) {
   if (event) {
-    event.preventDefault?.();
-    event.stopPropagation?.();
-    event.stopImmediatePropagation?.();
+    event.preventDefault();
+    event.stopPropagation();
   }
 
   const modal = $('whatsappQrModal');
   if (!modal) return false;
 
-  // Force the dialog closed in both property and attribute form.
-  modal.hidden = true;
-  modal.setAttribute('hidden', '');
+  // Build 21: class-based close is the single source of truth.
+  modal.classList.remove('is-open');
   modal.setAttribute('aria-hidden', 'true');
-  modal.style.display = 'none';
-
+  modal.hidden = true;
   document.body.classList.remove('whatsapp-qr-open');
-  document.body.style.overflow = '';
 
   const image = $('whatsappQrImage');
   if (image) {
@@ -693,15 +690,10 @@ function closeWhatsAppQr(event) {
     image.removeAttribute('src');
   }
 
-  // Remove the inline display override on the next open cycle.
-  requestAnimationFrame(() => {
-    if (modal.hidden) modal.style.removeProperty('display');
-  });
-
   return false;
 }
 
-// Keep a global fallback so the close button works even if another listener fails.
+// Global fallback for the inline close button.
 window.closeWhatsAppQr = closeWhatsAppQr;
 
 function sendWhatsAppRequest() {
@@ -1000,15 +992,9 @@ document.addEventListener(
       x.addEventListener('click', closeCart);
     });
     $('checkoutButton')?.addEventListener('click', sendWhatsAppRequest);
-    document.querySelectorAll('[data-close-whatsapp-qr]').forEach(x => {
-      x.addEventListener('click', closeWhatsAppQr, { capture: true });
-    });
-
-    // Capture-phase fallback: closes before any other page click handler can interfere.
-    document.addEventListener('click', event => {
-      const closeTarget = event.target.closest?.('[data-close-whatsapp-qr]');
-      if (closeTarget) closeWhatsAppQr(event);
-    }, true);
+    // Build 21: explicit close handlers for both X button and backdrop.
+    $('whatsappQrCloseButton')?.addEventListener('click', closeWhatsAppQr);
+    document.querySelector('.whatsapp-qr-backdrop')?.addEventListener('click', closeWhatsAppQr);
 
 
     updateCustomerAccountLink();
