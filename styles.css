@@ -808,3 +808,50 @@ html[data-portfolio="on"] .cart-remove {
   }
   html[data-portfolio="on"] .cart-item-image { height: 112px; }
 }
+
+
+/* ========================================
+   BUILD 20 — PORTFOLIO UX FIXES
+======================================== */
+/* Portfolio means price is discussed in the enquiry, never displayed in storefront UI. */
+html[data-portfolio="on"] .product-price,
+html[data-portfolio="on"] .modal-price,
+html[data-portfolio="on"] [data-product-price],
+html[data-portfolio="on"] .price-line { display:none!important; }
+
+/* Clearly show that a model is already in the enquiry list. */
+.view-details.enquiry-added {
+  background:#edf4e6!important;
+  color:#285f2d!important;
+  border:1px solid #9fbd8f!important;
+  box-shadow:none!important;
+}
+.view-details.enquiry-added:hover {
+  background:#e3efdb!important;
+  color:#214f26!important;
+  box-shadow:0 6px 16px rgba(40,95,45,.12)!important;
+}
+.enquiry-added-check {
+  display:inline-grid;
+  place-items:center;
+  width:19px;
+  height:19px;
+  border-radius:50%;
+  background:#2d6b35;
+  color:#fff;
+  font-size:12px;
+  font-weight:800;
+}
+
+/* Make the QR close control an isolated hit target above every modal child. */
+#whatsappQrCloseButton {
+  position:absolute!important;
+  top:12px!important;
+  right:12px!important;
+  z-index:99999!important;
+  display:grid!important;
+  place-items:center!important;
+  pointer-events:auto!important;
+  user-select:none;
+  -webkit-user-select:none;
+}

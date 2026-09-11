@@ -275,11 +275,14 @@ function products() {
               </p>
 
               <button
-                class="view-details"
+                class="view-details${isInEnquiry(p.id) ? ' enquiry-added' : ''}"
                 data-id="${p.id}"
                 type="button"
+                aria-label="${isInEnquiry(p.id) ? 'Added to enquiry. View details for ' : 'View details for '}${esc(p.product_code || 'product')}"
               >
-                <span>View Details</span><span class="view-details-arrow" aria-hidden="true">→</span>
+                ${isInEnquiry(p.id)
+                  ? '<span class="enquiry-added-check" aria-hidden="true">✓</span><span>Added to Enquiry</span>'
+                  : '<span>View Details</span><span class="view-details-arrow" aria-hidden="true">→</span>'}
               </button>
             </div>
 
@@ -489,6 +492,7 @@ function addActiveProductToCart() {
   S.cart.push({ id: +p.id, qty: 1 });
   saveCart();
   renderCart();
+  products();
   updateEnquiryButton();
   if (message) message.textContent = 'Added to your enquiry list.';
 }
@@ -497,6 +501,7 @@ function removeFromCart(id) {
   S.cart = S.cart.filter(item => +item.id !== +id);
   saveCart();
   renderCart();
+  products();
 
   if (+S.activeProductId === +id && !$('productModal').hidden) {
     updateEnquiryButton();
@@ -653,6 +658,7 @@ function openWhatsAppQr(url) {
   }
 
   openLink.href = url;
+  modal.style.removeProperty('display');
   modal.hidden = false;
   modal.removeAttribute('hidden');
   modal.setAttribute('aria-hidden', 'false');
@@ -664,16 +670,21 @@ function closeWhatsAppQr(event) {
   if (event) {
     event.preventDefault?.();
     event.stopPropagation?.();
+    event.stopImmediatePropagation?.();
   }
+
   const modal = $('whatsappQrModal');
-  if (!modal) return;
+  if (!modal) return false;
+
+  // Force the dialog closed in both property and attribute form.
   modal.hidden = true;
   modal.setAttribute('hidden', '');
   modal.setAttribute('aria-hidden', 'true');
+  modal.style.display = 'none';
+
   document.body.classList.remove('whatsapp-qr-open');
   document.body.style.overflow = '';
 
-  // Stop any late QR load/error callback from visually reviving the modal.
   const image = $('whatsappQrImage');
   if (image) {
     image.onload = null;
@@ -681,7 +692,17 @@ function closeWhatsAppQr(event) {
     image.classList.remove('is-ready');
     image.removeAttribute('src');
   }
+
+  // Remove the inline display override on the next open cycle.
+  requestAnimationFrame(() => {
+    if (modal.hidden) modal.style.removeProperty('display');
+  });
+
+  return false;
 }
+
+// Keep a global fallback so the close button works even if another listener fails.
+window.closeWhatsAppQr = closeWhatsAppQr;
 
 function sendWhatsAppRequest() {
   const message = $('checkoutMessage');
@@ -980,14 +1001,14 @@ document.addEventListener(
     });
     $('checkoutButton')?.addEventListener('click', sendWhatsAppRequest);
     document.querySelectorAll('[data-close-whatsapp-qr]').forEach(x => {
-      x.onclick = closeWhatsAppQr;
+      x.addEventListener('click', closeWhatsAppQr, { capture: true });
     });
 
-    // Delegated fallback keeps the QR close control working even if the modal DOM is refreshed.
+    // Capture-phase fallback: closes before any other page click handler can interfere.
     document.addEventListener('click', event => {
       const closeTarget = event.target.closest?.('[data-close-whatsapp-qr]');
       if (closeTarget) closeWhatsAppQr(event);
-    });
+    }, true);
 
 
     updateCustomerAccountLink();
