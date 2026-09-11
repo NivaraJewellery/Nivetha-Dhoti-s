@@ -7,8 +7,10 @@ function getCustomer(){try{return JSON.parse(localStorage.getItem(CUSTOMER_STORA
 function saveCustomer(customer){localStorage.setItem(CUSTOMER_STORAGE_KEY,JSON.stringify(customer))}
 function returnToStore(){
   const params=new URLSearchParams(window.location.search);
+  const wantsHistory=params.get('return')==='history';
   const wantsWhatsApp=params.get('return')==='whatsapp'||localStorage.getItem(RETURN_TO_WHATSAPP_KEY)==='1';
   const wantsCheckout=params.get('return')==='checkout'||localStorage.getItem(RETURN_TO_CHECKOUT_KEY)==='1';
+  if(wantsHistory){ window.location.href='enquiry-history.html'; return; }
   if(wantsWhatsApp){
     localStorage.removeItem(RETURN_TO_WHATSAPP_KEY);
     window.location.href='index.html?whatsapp=1';

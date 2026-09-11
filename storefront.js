@@ -1,4 +1,4 @@
-console.info('Nivetha Build 23 - native QR dialog + shareable image list');
+console.info('Nivetha Build 24 - enquiry history + clear after submit');
 const STORE_CONFIG = {
   commerceEnabled: false,
   portfolioMode: true,
@@ -39,6 +39,7 @@ const RETURN_TO_CHECKOUT_KEY = 'nivetha-return-to-checkout';
 const RETURN_TO_WHATSAPP_KEY = 'nivetha-return-to-whatsapp';
 const CHECKOUT_TOKEN_KEY = 'nivetha-checkout-token';
 const LAST_ORDER_KEY = 'nivetha-last-order';
+const ENQUIRY_HISTORY_PREFIX = 'nivetha-enquiry-history:';
 
 function getCustomer() {
   try { return JSON.parse(localStorage.getItem(CUSTOMER_STORAGE_KEY) || 'null'); }
@@ -580,44 +581,87 @@ function closeModal() {
 }
 
 
-function getShareableEnquiryUrl() {
-  const ids = S.cart.map(item => String(item.id)).filter(Boolean);
+function getHistoryKey(customer = getCustomer()) {
+  const identity = String(customer?.mobile || customer?.email || 'guest').toLowerCase().replace(/[^a-z0-9@._-]/g, '');
+  return `${ENQUIRY_HISTORY_PREFIX}${identity || 'guest'}`;
+}
+
+function loadEnquiryHistory(customer = getCustomer()) {
+  try {
+    const data = JSON.parse(localStorage.getItem(getHistoryKey(customer)) || '[]');
+    return Array.isArray(data) ? data : [];
+  } catch { return []; }
+}
+
+function saveEnquiryHistory(history, customer = getCustomer()) {
+  localStorage.setItem(getHistoryKey(customer), JSON.stringify(history));
+}
+
+function createEnquirySnapshot() {
+  const customer = getCustomer() || {};
+  const items = S.cart.map((item, index) => {
+    const p = productById(item.id);
+    if (!p) return null;
+    return {
+      id: String(p.id ?? item.id),
+      product_code: p.product_code || `Dhoti ${index + 1}`,
+      category: p.category || '',
+      image_1: p.image_1 || '',
+      image_2: p.image_2 || '',
+      image_3: p.image_3 || ''
+    };
+  }).filter(Boolean);
+  return {
+    enquiryId: `ENQ-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`,
+    submittedAt: new Date().toISOString(),
+    enquiryType: S.enquiryType === 'wholesale' ? 'wholesale' : 'retail',
+    customer: { name: customer.name || '', mobile: customer.mobile || '', email: customer.email || '' },
+    items
+  };
+}
+
+function saveSubmittedEnquiry(snapshot) {
+  const history = loadEnquiryHistory(snapshot.customer);
+  history.unshift(snapshot);
+  saveEnquiryHistory(history.slice(0, 100), snapshot.customer);
+}
+
+function getShareableEnquiryUrl(snapshot) {
+  const ids = snapshot.items.map(item => String(item.id)).filter(Boolean);
   const params = new URLSearchParams();
   params.set('ids', ids.join(','));
-  params.set('type', S.enquiryType === 'wholesale' ? 'wholesale' : 'retail');
+  params.set('type', snapshot.enquiryType);
   return `${window.location.origin}/enquiry.html?${params.toString()}`;
 }
 
-function buildWhatsAppRequestMessage() {
-  const customer = getCustomer() || {};
+function buildWhatsAppRequestMessage(snapshot) {
+  const customer = snapshot.customer || {};
   const lines = [
     "Hello Nivetha Dhoti's,",
     '',
     'I am interested in the following dhotis:',
     ''
   ];
-  S.cart.forEach((item, index) => {
-    const p = productById(item.id);
-    if (!p) return;
-    const code = p.product_code || `Dhoti ${index + 1}`;
-    const collection = p.category ? ` (${p.category})` : '';
-    lines.push(`${index + 1}. ${code}${collection}`);
+  snapshot.items.forEach((item, index) => {
+    const collection = item.category ? ` (${item.category})` : '';
+    lines.push(`${index + 1}. ${item.product_code}${collection}`);
   });
-  lines.push('', `Enquiry type: ${S.enquiryType === 'wholesale' ? 'Wholesale' : 'Retail'}`);
+  lines.push('', `Enquiry type: ${snapshot.enquiryType === 'wholesale' ? 'Wholesale' : 'Retail'}`);
   lines.push('', 'View all selected dhoti images in one place:');
-  lines.push(getShareableEnquiryUrl());
+  lines.push(getShareableEnquiryUrl(snapshot));
   lines.push('', 'Customer details:');
   if (customer.name) lines.push(`Name: ${customer.name}`);
   if (customer.mobile) lines.push(`Mobile: ${customer.mobile}`);
   if (customer.email) lines.push(`Email: ${customer.email}`);
+  lines.push('', `Enquiry reference: ${snapshot.enquiryId}`);
   lines.push('', 'Please confirm availability and share the price/details for the selected models. Thank you.');
   return lines.join('\n');
 }
 
-function getWhatsAppRequestUrl() {
+function getWhatsAppRequestUrl(snapshot) {
   const number = String(STORE_CONFIG.whatsappNumber || '').replace(/\D/g, '');
   if (!/^\d{10,15}$/.test(number)) return '';
-  const text = encodeURIComponent(buildWhatsAppRequestMessage());
+  const text = encodeURIComponent(buildWhatsAppRequestMessage(snapshot));
   return `https://wa.me/${number}?text=${text}`;
 }
 
@@ -687,13 +731,21 @@ function sendWhatsAppRequest() {
     return;
   }
 
-  const url = getWhatsAppRequestUrl();
+  const snapshot = createEnquirySnapshot();
+  const url = getWhatsAppRequestUrl(snapshot);
   if (!url) {
-    if (message) {
-      message.textContent = 'Nivetha WhatsApp number is not configured yet. Add it in STORE_CONFIG.whatsappNumber.';
-    }
+    if (message) message.textContent = 'Nivetha WhatsApp number is not configured yet.';
     return;
   }
+
+  // Save the enquiry before opening WhatsApp so it is available in the customer's history.
+  saveSubmittedEnquiry(snapshot);
+
+  // Clear the active enquiry list after submission while keeping the generated QR/message intact.
+  S.cart = [];
+  saveCart();
+  renderCart();
+  products();
 
   closeCart();
   openWhatsAppQr(url);

@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="account.css">
+<link rel="stylesheet" href="account.css?v=24">
 </head>
 <body>
 <header class="account-header"><a href="index.html"><img src="assets/nivetha-logo-approved.jpg" alt="Nivetha Dhoti's"></a><a href="index.html">Back to store</a></header>
@@ -28,12 +28,13 @@
     <div id="loggedInPanel" hidden>
       <p class="welcome" id="welcomeText"></p>
       <button id="continueShopping" class="primary" type="button">CONTINUE TO MY LIST</button>
+      <a id="viewEnquiryHistory" class="secondary history-link" href="enquiry-history.html">VIEW ENQUIRY HISTORY</a>
       <button id="logoutButton" class="secondary" type="button">LOGOUT</button>
     </div>
 
     <p class="auth-note">This portfolio build uses a local customer session for the enquiry flow. Server-side OTP/account verification can be connected later.</p>
   </section>
 </main>
-<script src="account.js"></script>
+<script src="account.js?v=24"></script>
 </body>
 </html>
