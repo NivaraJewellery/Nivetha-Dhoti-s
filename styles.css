@@ -903,3 +903,13 @@ body.whatsapp-qr-open {
   pointer-events: auto !important;
   touch-action: manipulation !important;
 }
+
+
+/* BUILD 23 — native browser dialog for reliable QR closure */
+.whatsapp-qr-dialog{border:0!important;padding:0!important;margin:auto!important;width:min(510px,94vw)!important;max-width:94vw!important;max-height:94vh!important;overflow:visible!important;background:transparent!important;color:inherit}
+.whatsapp-qr-dialog:not([open]){display:none!important}
+.whatsapp-qr-dialog[open]{display:block!important}
+.whatsapp-qr-dialog::backdrop{background:rgba(28,20,14,.18)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.whatsapp-qr-dialog .whatsapp-qr-card{width:100%!important;max-height:92vh!important;overflow:auto!important;box-sizing:border-box!important}
+.whatsapp-qr-close-form{position:absolute;top:12px;right:12px;z-index:1000;margin:0}
+.whatsapp-qr-dialog #whatsappQrCloseButton{position:static!important;display:grid!important;place-items:center!important}

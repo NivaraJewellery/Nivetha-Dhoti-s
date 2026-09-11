@@ -1,4 +1,4 @@
-console.info('Nivetha Build 21 - QR modal close fix');
+console.info('Nivetha Build 23 - native QR dialog + shareable image list');
 const STORE_CONFIG = {
   commerceEnabled: false,
   portfolioMode: true,
@@ -580,6 +580,14 @@ function closeModal() {
 }
 
 
+function getShareableEnquiryUrl() {
+  const ids = S.cart.map(item => String(item.id)).filter(Boolean);
+  const params = new URLSearchParams();
+  params.set('ids', ids.join(','));
+  params.set('type', S.enquiryType === 'wholesale' ? 'wholesale' : 'retail');
+  return `${window.location.origin}/enquiry.html?${params.toString()}`;
+}
+
 function buildWhatsAppRequestMessage() {
   const customer = getCustomer() || {};
   const lines = [
@@ -588,20 +596,16 @@ function buildWhatsAppRequestMessage() {
     'I am interested in the following dhotis:',
     ''
   ];
-
   S.cart.forEach((item, index) => {
     const p = productById(item.id);
     if (!p) return;
-    const parts = [
-      `${index + 1}. ${p.product_code || 'Dhoti'}`,
-      p.category ? `Collection: ${p.category}` : ''
-    ].filter(Boolean);
-    lines.push(parts.join(' | '));
-    if (p.image_1) lines.push(`Image: ${p.image_1}`);
-    lines.push('');
+    const code = p.product_code || `Dhoti ${index + 1}`;
+    const collection = p.category ? ` (${p.category})` : '';
+    lines.push(`${index + 1}. ${code}${collection}`);
   });
-
   lines.push('', `Enquiry type: ${S.enquiryType === 'wholesale' ? 'Wholesale' : 'Retail'}`);
+  lines.push('', 'View all selected dhoti images in one place:');
+  lines.push(getShareableEnquiryUrl());
   lines.push('', 'Customer details:');
   if (customer.name) lines.push(`Name: ${customer.name}`);
   if (customer.mobile) lines.push(`Mobile: ${customer.mobile}`);
@@ -649,60 +653,30 @@ function setWhatsAppQrSource(image, url, status) {
 }
 
 function openWhatsAppQr(url) {
-  const modal = $('whatsappQrModal');
+  const dialog = $('whatsappQrDialog');
   const image = $('whatsappQrImage');
   const openLink = $('whatsappQrOpenLink');
   const status = $('whatsappQrStatus');
-  if (!modal || !image || !openLink) {
+  if (!dialog || !image || !openLink) {
     window.open(url, '_blank', 'noopener,noreferrer');
     return;
   }
-
   openLink.href = url;
-  modal.hidden = false;
-  modal.removeAttribute('hidden');
-  modal.setAttribute('aria-hidden', 'false');
-  modal.classList.add('is-open');
-  // Build 22: explicitly override any stale/cached CSS state.
-  modal.style.setProperty('display', 'grid', 'important');
-  modal.style.setProperty('pointer-events', 'auto', 'important');
-  document.body.classList.add('whatsapp-qr-open');
   setWhatsAppQrSource(image, url, status);
+  if (typeof dialog.showModal === 'function') {
+    if (!dialog.open) dialog.showModal();
+  } else {
+    dialog.setAttribute('open', '');
+  }
 }
 
-function closeWhatsAppQr(event) {
-  if (event) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
-  }
-
-  const modal = $('whatsappQrModal');
-  if (!modal) return false;
-
-  // Build 22: hard close. DOM state + inline style are all reset together.
-  modal.classList.remove('is-open');
-  modal.setAttribute('aria-hidden', 'true');
-  modal.hidden = true;
-  modal.style.setProperty('display', 'none', 'important');
-  modal.style.setProperty('pointer-events', 'none', 'important');
-  document.body.classList.remove('whatsapp-qr-open');
-  document.documentElement.classList.remove('whatsapp-qr-open');
-
-  const image = $('whatsappQrImage');
-  if (image) {
-    image.onload = null;
-    image.onerror = null;
-    image.classList.remove('is-ready');
-    image.removeAttribute('src');
-  }
-
-  return false;
+function closeWhatsAppQr() {
+  const dialog = $('whatsappQrDialog');
+  if (!dialog) return;
+  if (typeof dialog.close === 'function' && dialog.open) dialog.close();
+  else dialog.removeAttribute('open');
 }
-
-// Build 22: global hard-close entry point used by inline and delegated handlers.
 window.closeWhatsAppQr = closeWhatsAppQr;
-window.forceCloseWhatsAppQr = closeWhatsAppQr;
 
 function sendWhatsAppRequest() {
   const message = $('checkoutMessage');
@@ -1000,13 +974,12 @@ document.addEventListener(
       x.addEventListener('click', closeCart);
     });
     $('checkoutButton')?.addEventListener('click', sendWhatsAppRequest);
-    // Build 22: direct handlers + capture-phase delegation so the QR can always be closed.
-    $('whatsappQrCloseButton')?.addEventListener('click', closeWhatsAppQr, true);
-    document.querySelector('.whatsapp-qr-backdrop')?.addEventListener('click', closeWhatsAppQr, true);
-    document.addEventListener('click', event => {
-      const closeTarget = event.target.closest?.('[data-close-whatsapp-qr], #whatsappQrCloseButton');
-      if (closeTarget) closeWhatsAppQr(event);
-    }, true);
+    const qrDialog = $('whatsappQrDialog');
+    qrDialog?.addEventListener('click', event => {
+      const rect = qrDialog.getBoundingClientRect();
+      const outside = event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom;
+      if (outside) closeWhatsAppQr();
+    });
 
 
     updateCustomerAccountLink();
@@ -1041,7 +1014,7 @@ document.addEventListener(
           if (e.key === 'Escape') {
             if (!$('productModal').hidden) closeModal();
             if ($('cartDrawer').classList.contains('open')) closeCart();
-            if ($('whatsappQrModal') && !$('whatsappQrModal').hidden) closeWhatsAppQr();
+            if ($('whatsappQrDialog')?.open) closeWhatsAppQr();
           }
         }
       );
