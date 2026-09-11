@@ -882,3 +882,24 @@ html[data-portfolio="on"] .price-line { display:none!important; }
 body.whatsapp-qr-open {
   overflow: hidden;
 }
+
+/* ========================================
+   BUILD 22 — HARD QR CLOSE SAFETY
+======================================== */
+#whatsappQrModal.whatsapp-qr-modal {
+  display: none !important;
+  pointer-events: none !important;
+}
+#whatsappQrModal.whatsapp-qr-modal.is-open {
+  display: grid !important;
+  pointer-events: auto !important;
+}
+#whatsappQrModal[hidden] {
+  display: none !important;
+  pointer-events: none !important;
+}
+#whatsappQrCloseButton {
+  z-index: 2147483647 !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+}

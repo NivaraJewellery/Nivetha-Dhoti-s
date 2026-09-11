@@ -663,6 +663,9 @@ function openWhatsAppQr(url) {
   modal.removeAttribute('hidden');
   modal.setAttribute('aria-hidden', 'false');
   modal.classList.add('is-open');
+  // Build 22: explicitly override any stale/cached CSS state.
+  modal.style.setProperty('display', 'grid', 'important');
+  modal.style.setProperty('pointer-events', 'auto', 'important');
   document.body.classList.add('whatsapp-qr-open');
   setWhatsAppQrSource(image, url, status);
 }
@@ -671,16 +674,20 @@ function closeWhatsAppQr(event) {
   if (event) {
     event.preventDefault();
     event.stopPropagation();
+    if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
   }
 
   const modal = $('whatsappQrModal');
   if (!modal) return false;
 
-  // Build 21: class-based close is the single source of truth.
+  // Build 22: hard close. DOM state + inline style are all reset together.
   modal.classList.remove('is-open');
   modal.setAttribute('aria-hidden', 'true');
   modal.hidden = true;
+  modal.style.setProperty('display', 'none', 'important');
+  modal.style.setProperty('pointer-events', 'none', 'important');
   document.body.classList.remove('whatsapp-qr-open');
+  document.documentElement.classList.remove('whatsapp-qr-open');
 
   const image = $('whatsappQrImage');
   if (image) {
@@ -693,8 +700,9 @@ function closeWhatsAppQr(event) {
   return false;
 }
 
-// Global fallback for the inline close button.
+// Build 22: global hard-close entry point used by inline and delegated handlers.
 window.closeWhatsAppQr = closeWhatsAppQr;
+window.forceCloseWhatsAppQr = closeWhatsAppQr;
 
 function sendWhatsAppRequest() {
   const message = $('checkoutMessage');
@@ -992,9 +1000,13 @@ document.addEventListener(
       x.addEventListener('click', closeCart);
     });
     $('checkoutButton')?.addEventListener('click', sendWhatsAppRequest);
-    // Build 21: explicit close handlers for both X button and backdrop.
-    $('whatsappQrCloseButton')?.addEventListener('click', closeWhatsAppQr);
-    document.querySelector('.whatsapp-qr-backdrop')?.addEventListener('click', closeWhatsAppQr);
+    // Build 22: direct handlers + capture-phase delegation so the QR can always be closed.
+    $('whatsappQrCloseButton')?.addEventListener('click', closeWhatsAppQr, true);
+    document.querySelector('.whatsapp-qr-backdrop')?.addEventListener('click', closeWhatsAppQr, true);
+    document.addEventListener('click', event => {
+      const closeTarget = event.target.closest?.('[data-close-whatsapp-qr], #whatsappQrCloseButton');
+      if (closeTarget) closeWhatsAppQr(event);
+    }, true);
 
 
     updateCustomerAccountLink();

@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=21">
+<link rel="stylesheet" href="styles.css?v=22">
 </head>
 <body>
 <div class="topbar">
@@ -128,10 +128,10 @@
   </aside>
 </div>
 
-<div id="whatsappQrModal" class="whatsapp-qr-modal" hidden>
-  <div class="whatsapp-qr-backdrop" data-close-whatsapp-qr></div>
+<div id="whatsappQrModal" class="whatsapp-qr-modal" hidden style="display:none;pointer-events:none">
+  <div class="whatsapp-qr-backdrop" data-close-whatsapp-qr onclick="return window.forceCloseWhatsAppQr ? window.forceCloseWhatsAppQr(event) : false;"></div>
   <section class="whatsapp-qr-card" role="dialog" aria-modal="true" aria-labelledby="whatsappQrTitle">
-    <button id="whatsappQrCloseButton" class="whatsapp-qr-close" type="button" aria-label="Close WhatsApp QR code" data-close-whatsapp-qr>×</button>
+    <button id="whatsappQrCloseButton" class="whatsapp-qr-close" type="button" aria-label="Close WhatsApp QR code" data-close-whatsapp-qr onclick="return window.forceCloseWhatsAppQr ? window.forceCloseWhatsAppQr(event) : false;">×</button>
     <h2 id="whatsappQrTitle">Send Enquiry via WhatsApp</h2>
     <p class="whatsapp-qr-copy">Scan this QR code with your phone to open your selected dhoti enquiry in WhatsApp.</p>
     <div class="whatsapp-qr-image-wrap">
@@ -161,6 +161,6 @@
 <script>
 document.querySelector('.menu').onclick=()=>document.querySelector('#nav').classList.toggle('open');
 </script>
-<script src="storefront.js?v=21"></script>
+<script src="storefront.js?v=22"></script>
 </body>
 </html>
