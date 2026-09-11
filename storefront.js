@@ -5,6 +5,10 @@ const STORE_CONFIG = {
   whatsappNumber: '919789105558'
 };
 
+// Build 18: the enquiry list is session-only.
+// Remove any legacy persistent list created by older builds.
+try { localStorage.removeItem('nivetha_cart'); } catch {}
+
 const S = {
   products: [],
   cart: loadCart(),
@@ -14,7 +18,7 @@ const S = {
 
 function loadCart() {
   try {
-    const saved = JSON.parse(localStorage.getItem('nivetha_cart') || '[]');
+    const saved = JSON.parse(sessionStorage.getItem('nivetha_cart') || '[]');
     return Array.isArray(saved) ? saved : [];
   } catch {
     return [];
@@ -23,7 +27,7 @@ function loadCart() {
 
 function saveCart() {
   resetCheckoutToken();
-  localStorage.setItem('nivetha_cart', JSON.stringify(S.cart));
+  sessionStorage.setItem('nivetha_cart', JSON.stringify(S.cart));
   updateCartCount();
 }
 
@@ -587,6 +591,8 @@ function buildWhatsAppRequestMessage() {
       p.category ? `Collection: ${p.category}` : ''
     ].filter(Boolean);
     lines.push(parts.join(' | '));
+    if (p.image_1) lines.push(`Image: ${p.image_1}`);
+    lines.push('');
   });
 
   lines.push('', `Enquiry type: ${S.enquiryType === 'wholesale' ? 'Wholesale' : 'Retail'}`);
@@ -648,15 +654,33 @@ function openWhatsAppQr(url) {
 
   openLink.href = url;
   modal.hidden = false;
+  modal.removeAttribute('hidden');
+  modal.setAttribute('aria-hidden', 'false');
   document.body.classList.add('whatsapp-qr-open');
   setWhatsAppQrSource(image, url, status);
 }
 
-function closeWhatsAppQr() {
+function closeWhatsAppQr(event) {
+  if (event) {
+    event.preventDefault?.();
+    event.stopPropagation?.();
+  }
   const modal = $('whatsappQrModal');
   if (!modal) return;
   modal.hidden = true;
+  modal.setAttribute('hidden', '');
+  modal.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('whatsapp-qr-open');
+  document.body.style.overflow = '';
+
+  // Stop any late QR load/error callback from visually reviving the modal.
+  const image = $('whatsappQrImage');
+  if (image) {
+    image.onload = null;
+    image.onerror = null;
+    image.classList.remove('is-ready');
+    image.removeAttribute('src');
+  }
 }
 
 function sendWhatsAppRequest() {
@@ -759,7 +783,7 @@ function finishPaidCheckout(order){
   const paymentId=order?.razorpay_payment_id||'';
   localStorage.setItem(LAST_ORDER_KEY,JSON.stringify(order||{}));
   S.cart=[];
-  localStorage.removeItem('nivetha_cart');
+  sessionStorage.removeItem('nivetha_cart');
   resetCheckoutToken();
   renderCart();
   if(message){
@@ -955,7 +979,15 @@ document.addEventListener(
       x.addEventListener('click', closeCart);
     });
     $('checkoutButton')?.addEventListener('click', sendWhatsAppRequest);
-    document.querySelectorAll('[data-close-whatsapp-qr]').forEach(x => x.addEventListener('click', closeWhatsAppQr));
+    document.querySelectorAll('[data-close-whatsapp-qr]').forEach(x => {
+      x.onclick = closeWhatsAppQr;
+    });
+
+    // Delegated fallback keeps the QR close control working even if the modal DOM is refreshed.
+    document.addEventListener('click', event => {
+      const closeTarget = event.target.closest?.('[data-close-whatsapp-qr]');
+      if (closeTarget) closeWhatsAppQr(event);
+    });
 
 
     updateCustomerAccountLink();
