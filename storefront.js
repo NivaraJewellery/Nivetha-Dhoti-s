@@ -229,9 +229,6 @@ function products() {
 
   $('productGrid').innerHTML = a.length
     ? a.map(p => {
-        const stock =
-          Number(p.stock || 0) > 0;
-
         return `
           <article class="product-card dynamic">
 
@@ -273,22 +270,12 @@ function products() {
                 ${esc(p.product_code)}
               </p>
 
-              <p
-                class="stock-line ${stock ? '' : 'out'}"
-              >
-                ${
-                  stock
-                    ? 'Available'
-                    : 'Currently unavailable'
-                }
-              </p>
-
               <button
                 class="view-details"
                 data-id="${p.id}"
                 type="button"
               >
-                VIEW DETAILS
+                <span>View Details</span><span class="view-details-arrow" aria-hidden="true">→</span>
               </button>
             </div>
 
@@ -611,6 +598,67 @@ function buildWhatsAppRequestMessage() {
   return lines.join('\n');
 }
 
+function getWhatsAppRequestUrl() {
+  const number = String(STORE_CONFIG.whatsappNumber || '').replace(/\D/g, '');
+  if (!/^\d{10,15}$/.test(number)) return '';
+  const text = encodeURIComponent(buildWhatsAppRequestMessage());
+  return `https://wa.me/${number}?text=${text}`;
+}
+
+function setWhatsAppQrSource(image, url, status) {
+  const encoded = encodeURIComponent(url);
+  const sources = [
+    `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=12&data=${encoded}`,
+    `https://quickchart.io/qr?size=320&margin=2&ecLevel=M&text=${encoded}`
+  ];
+  let sourceIndex = 0;
+
+  if (status) status.textContent = 'Preparing your WhatsApp QR code…';
+  image.alt = 'WhatsApp enquiry QR code';
+  image.removeAttribute('src');
+
+  image.onload = () => {
+    image.classList.add('is-ready');
+    if (status) status.textContent = 'Scan this QR code with your phone camera to open the enquiry in WhatsApp.';
+  };
+
+  image.onerror = () => {
+    sourceIndex += 1;
+    if (sourceIndex < sources.length) {
+      image.src = sources[sourceIndex];
+      return;
+    }
+    image.classList.remove('is-ready');
+    if (status) status.textContent = 'QR code could not be loaded. Use “Open WhatsApp on this device” below.';
+  };
+
+  image.classList.remove('is-ready');
+  image.src = sources[sourceIndex];
+}
+
+function openWhatsAppQr(url) {
+  const modal = $('whatsappQrModal');
+  const image = $('whatsappQrImage');
+  const openLink = $('whatsappQrOpenLink');
+  const status = $('whatsappQrStatus');
+  if (!modal || !image || !openLink) {
+    window.open(url, '_blank', 'noopener,noreferrer');
+    return;
+  }
+
+  openLink.href = url;
+  modal.hidden = false;
+  document.body.classList.add('whatsapp-qr-open');
+  setWhatsAppQrSource(image, url, status);
+}
+
+function closeWhatsAppQr() {
+  const modal = $('whatsappQrModal');
+  if (!modal) return;
+  modal.hidden = true;
+  document.body.classList.remove('whatsapp-qr-open');
+}
+
 function sendWhatsAppRequest() {
   const message = $('checkoutMessage');
   if (!S.cart.length) return;
@@ -620,18 +668,17 @@ function sendWhatsAppRequest() {
     return;
   }
 
-  const number = String(STORE_CONFIG.whatsappNumber || '').replace(/\D/g, '');
-  if (!/^\d{10,15}$/.test(number)) {
+  const url = getWhatsAppRequestUrl();
+  if (!url) {
     if (message) {
       message.textContent = 'Nivetha WhatsApp number is not configured yet. Add it in STORE_CONFIG.whatsappNumber.';
     }
     return;
   }
 
-  const text = encodeURIComponent(buildWhatsAppRequestMessage());
-  const url = `https://wa.me/${number}?text=${text}`;
-  window.open(url, '_blank', 'noopener,noreferrer');
-  if (message) message.textContent = 'WhatsApp request opened. Review the message and tap Send.';
+  closeCart();
+  openWhatsAppQr(url);
+  if (message) message.textContent = '';
 }
 
 function checkoutMoney(v){return `₹${Math.max(0,Number(v||0)).toLocaleString('en-IN')}`;}
@@ -908,6 +955,7 @@ document.addEventListener(
       x.addEventListener('click', closeCart);
     });
     $('checkoutButton')?.addEventListener('click', sendWhatsAppRequest);
+    document.querySelectorAll('[data-close-whatsapp-qr]').forEach(x => x.addEventListener('click', closeWhatsAppQr));
 
 
     updateCustomerAccountLink();
@@ -942,6 +990,7 @@ document.addEventListener(
           if (e.key === 'Escape') {
             if (!$('productModal').hidden) closeModal();
             if ($('cartDrawer').classList.contains('open')) closeCart();
+            if ($('whatsappQrModal') && !$('whatsappQrModal').hidden) closeWhatsAppQr();
           }
         }
       );

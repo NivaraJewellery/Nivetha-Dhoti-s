@@ -697,3 +697,68 @@ html[data-portfolio="on"] .enquiry-button.selected {
 .enquiry-type input:checked + span { background:#4a2714; color:#fff; border-color:#4a2714; }
 html[data-portfolio="on"] .cart-item-actions { margin-top:10px; }
 html[data-portfolio="on"] .cart-remove { min-height:38px; padding:0 14px; }
+
+/* ========================================
+   BUILD 16 — DESKTOP WHATSAPP QR HANDOFF
+======================================== */
+.whatsapp-qr-modal[hidden]{display:none!important}
+.whatsapp-qr-modal{position:fixed;inset:0;z-index:1600;display:grid;place-items:center;padding:20px}
+.whatsapp-qr-backdrop{position:absolute;inset:0;background:rgba(28,14,7,.72);backdrop-filter:blur(3px)}
+.whatsapp-qr-card{position:relative;z-index:1;width:min(430px,94vw);box-sizing:border-box;padding:32px 28px 28px;text-align:center;background:#fffdf8;border-radius:18px;box-shadow:0 24px 70px rgba(0,0,0,.28)}
+.whatsapp-qr-close{position:absolute;top:12px;right:12px;width:38px;height:38px;border:0;border-radius:50%;background:#3b2112;color:#fff;font-size:24px;line-height:1;cursor:pointer}
+.whatsapp-qr-kicker{margin:0 0 7px;font-size:11px;font-weight:800;letter-spacing:.16em;color:#8d633a}
+.whatsapp-qr-card h2{margin:0;color:#3b2112}
+.whatsapp-qr-copy{margin:10px auto 18px;max-width:350px;line-height:1.5;color:#715d4e;font-size:14px}
+.whatsapp-qr-image-wrap{width:304px;max-width:100%;min-height:304px;margin:0 auto;padding:12px;box-sizing:border-box;display:grid;place-items:center;background:#fff;border:1px solid #dfd0c0;border-radius:14px}
+.whatsapp-qr-image-wrap img{display:block;width:280px;height:280px;max-width:100%;object-fit:contain}
+.whatsapp-qr-status{min-height:18px;margin:14px 0;font-size:13px;color:#6d594c}
+.whatsapp-qr-open{min-height:48px;width:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 18px;border:0;border-radius:9px;background:#1f6f43;color:#fff;text-decoration:none;font:800 13px/1.2 inherit;letter-spacing:.03em;text-align:center;cursor:pointer;transition:opacity .15s ease,transform .15s ease}
+.whatsapp-qr-open::before{content:'◉';margin-right:8px}
+.whatsapp-qr-open:hover{opacity:.9}.whatsapp-qr-open:active{transform:translateY(1px)}
+.whatsapp-qr-open:focus-visible,.whatsapp-qr-close:focus-visible{outline:3px solid #c99b50;outline-offset:3px}
+body.whatsapp-qr-open{overflow:hidden}
+@media(max-width:767px){.whatsapp-qr-card{padding:28px 18px 20px}.whatsapp-qr-image-wrap{width:260px;min-height:260px}.whatsapp-qr-image-wrap img{width:236px;height:236px}}
+
+
+/* BUILD 17 — PORTFOLIO POLISH + RELIABLE WHATSAPP QR */
+.product-card.dynamic .stock-line{display:none!important}
+.product-card-info{padding:10px 12px 14px;text-align:left}
+.product-card.dynamic .product-code{margin:0 0 10px;font-size:11px;letter-spacing:.08em;color:#5c351e;font-weight:700}
+.view-details{
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  min-height:40px;padding:0 18px;border:0!important;border-radius:999px!important;
+  background:linear-gradient(135deg,#6f3a1d,#8e552a)!important;color:#fff8ee!important;
+  font:700 12px/1 inherit!important;letter-spacing:.02em!important;text-transform:none!important;
+  box-shadow:0 7px 18px rgba(78,39,17,.15);cursor:pointer;
+  transition:transform .18s ease,box-shadow .18s ease,background .18s ease;
+}
+.view-details:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(78,39,17,.22);background:linear-gradient(135deg,#5c2d15,#7f4821)!important}
+.view-details:focus-visible{outline:3px solid rgba(177,126,71,.45);outline-offset:3px}
+.view-details-arrow{font-size:16px;line-height:1;transition:transform .18s ease}
+.view-details:hover .view-details-arrow{transform:translateX(3px)}
+.modal-stock{display:none!important}
+
+.whatsapp-qr-card{width:min(510px,94vw);padding:30px 28px 24px;border:1px solid #e3d1bb;background:#fffaf2;border-radius:20px}
+.whatsapp-qr-card h2{font-family:"Cormorant Garamond",serif;font-size:32px;line-height:1.05;margin:0;color:#2f190d}
+.whatsapp-qr-copy{max-width:390px;margin:12px auto 18px;font-size:14px;color:#6b5748}
+.whatsapp-qr-image-wrap{position:relative;width:264px;min-height:264px;padding:12px;border-radius:16px;background:#fff;border:1px solid #eadcc9;box-shadow:0 10px 30px rgba(75,43,24,.08)}
+.whatsapp-qr-image-wrap img{position:relative;z-index:2;width:240px;height:240px;opacity:0;transition:opacity .18s ease}
+.whatsapp-qr-image-wrap img.is-ready{opacity:1}
+.whatsapp-qr-loader{position:absolute;left:50%;top:50%;width:38px;height:38px;margin:-19px 0 0 -19px;border:4px solid #eadcc9;border-top-color:#6f3a1d;border-radius:50%;animation:nivethaQrSpin .85s linear infinite}
+.whatsapp-qr-image-wrap:has(img.is-ready) .whatsapp-qr-loader{display:none}
+@keyframes nivethaQrSpin{to{transform:rotate(360deg)}}
+.whatsapp-qr-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:16px 0 4px;padding:12px 6px;border-radius:13px;background:#f8efe3}
+.whatsapp-qr-steps div{display:flex;flex-direction:column;align-items:center;gap:6px;padding:4px 10px;color:#5c4738;font-size:11px;line-height:1.35}
+.whatsapp-qr-steps div+div{border-left:1px solid #ead7bf}
+.whatsapp-qr-steps b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#fff;color:#6f3a1d;font-size:12px;border:1px solid #ddc5a8}
+.whatsapp-qr-status{min-height:18px;margin:10px 0 4px;font-size:12px;color:#715d4e}
+.whatsapp-qr-or{display:flex;align-items:center;gap:12px;margin:10px 0;color:#846b59;font-size:11px}
+.whatsapp-qr-or::before,.whatsapp-qr-or::after{content:"";height:1px;flex:1;background:#ddc8ae}
+.whatsapp-qr-open{min-height:50px;border-radius:999px;background:#20bf55;font-size:14px;box-shadow:0 10px 22px rgba(32,191,85,.18)}
+.whatsapp-qr-open::before{content:'✆';font-size:18px;margin-right:9px}
+.whatsapp-qr-footnote{margin:12px 0 0;color:#7b6758;font-size:11px;line-height:1.45}
+@media(max-width:520px){
+  .whatsapp-qr-card{padding:28px 16px 20px}.whatsapp-qr-card h2{font-size:28px}
+  .whatsapp-qr-image-wrap{width:236px;min-height:236px}.whatsapp-qr-image-wrap img{width:212px;height:212px}
+  .whatsapp-qr-steps{grid-template-columns:1fr;gap:6px}.whatsapp-qr-steps div{flex-direction:row;text-align:left}.whatsapp-qr-steps div+div{border-left:0;border-top:1px solid #ead7bf}
+}

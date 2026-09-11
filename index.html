@@ -128,6 +128,28 @@
   </aside>
 </div>
 
+<div id="whatsappQrModal" class="whatsapp-qr-modal" hidden>
+  <div class="whatsapp-qr-backdrop" data-close-whatsapp-qr></div>
+  <section class="whatsapp-qr-card" role="dialog" aria-modal="true" aria-labelledby="whatsappQrTitle">
+    <button class="whatsapp-qr-close" type="button" aria-label="Close WhatsApp QR code" data-close-whatsapp-qr>×</button>
+    <h2 id="whatsappQrTitle">Send Enquiry via WhatsApp</h2>
+    <p class="whatsapp-qr-copy">Scan this QR code with your phone to open your selected dhoti enquiry in WhatsApp.</p>
+    <div class="whatsapp-qr-image-wrap">
+      <div class="whatsapp-qr-loader" aria-hidden="true"></div>
+      <img id="whatsappQrImage" alt="WhatsApp enquiry QR code" width="320" height="320">
+    </div>
+    <div class="whatsapp-qr-steps" aria-label="How to send your enquiry">
+      <div><b>1</b><span>Open your phone camera</span></div>
+      <div><b>2</b><span>Scan the QR code</span></div>
+      <div><b>3</b><span>Review and send enquiry</span></div>
+    </div>
+    <p id="whatsappQrStatus" class="whatsapp-qr-status" aria-live="polite"></p>
+    <div class="whatsapp-qr-or"><span>OR</span></div>
+    <a id="whatsappQrOpenLink" class="whatsapp-qr-open" href="#" target="_blank" rel="noopener noreferrer">Open WhatsApp on this device</a>
+    <p class="whatsapp-qr-footnote">Your selected dhoti models and enquiry type are already included in the message.</p>
+  </section>
+</div>
+
 <footer id="contact">
   <div class="footer-brand"><img src="assets/nivetha-logo-approved.jpg" alt=""><p>Bringing you the finest quality dhotis crafted with tradition, woven with care, and made for every occasion.</p></div>
   <div><h4>QUICK LINKS</h4><a>Home</a><a>Collections</a><a>Shop</a><a>About Us</a><a>Wholesale</a><a>Contact Us</a></div>
