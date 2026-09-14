@@ -927,3 +927,7 @@ body.whatsapp-qr-open {
 .hero-dot.active{background:#ecc67f;border-color:#ecc67f;transform:scale(1.08)}
 @media(max-width:850px){.hero-image{height:430px}.hero-slide-contain{object-fit:contain}.hero-image.hero-first-slide:after{width:95px}.hero-image .slide.left{left:10px}.hero-image .slide.right{right:10px}}
 @media(max-width:520px){.hero-image{height:390px}.hero-image.hero-first-slide:after{width:72px}.hero-image .dots{bottom:12px;gap:7px}.hero-dot{width:8px;height:8px}}
+
+/* Build 28: resilient hero fallback so the first dhoti is never blank. */
+.hero-image{background:#2b160b url('/assets/hero-scroll-1.jpg') center/cover no-repeat}
+.hero-image:has(.hero-slide){background-image:none}

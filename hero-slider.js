@@ -1,11 +1,11 @@
 (() => {
   const slides = [
-    { src: 'assets/hero-scroll-1.jpg', alt: 'White dhoti with orange and gold zari border' },
-    { src: 'assets/hero-scroll-2.jpg', alt: 'White dhoti with black border' },
-    { src: 'assets/hero-scroll-3.jpg', alt: 'White dhoti with teal green border' },
-    { src: 'assets/hero-scroll-4.jpg', alt: 'White dhoti with cream and gold zari border' },
-    { src: 'assets/hero-scroll-5.jpg', alt: 'White dhoti with green and gold border' },
-    { src: 'assets/hero-scroll-6.jpg', alt: 'White dhoti with fine black stripe border' }
+    { src: '/assets/hero-scroll-1.jpg', alt: 'White dhoti with orange and gold zari border' },
+    { src: '/assets/hero-scroll-2.jpg', alt: 'White dhoti with black border' },
+    { src: '/assets/hero-scroll-3.jpg', alt: 'White dhoti with teal green border' },
+    { src: '/assets/hero-scroll-4.jpg', alt: 'White dhoti with cream and gold zari border' },
+    { src: '/assets/hero-scroll-5.jpg', alt: 'White dhoti with green and gold border' },
+    { src: '/assets/hero-scroll-6.jpg', alt: 'White dhoti with fine black stripe border' }
   ];
 
   const init = () => {
