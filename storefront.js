@@ -1,4 +1,4 @@
-console.info('Nivetha Build 25 - clean portfolio, no customer login');
+console.info('Nivetha Build 26 - hero slideshow, clean portfolio, no customer login');
 const STORE_CONFIG = {
   commerceEnabled: false,
   portfolioMode: true,
