@@ -1,4 +1,4 @@
-console.info('Nivetha Build 24 - enquiry history + clear after submit');
+console.info('Nivetha Build 25 - clean portfolio, no customer login');
 const STORE_CONFIG = {
   commerceEnabled: false,
   portfolioMode: true,
@@ -34,42 +34,8 @@ function saveCart() {
 
 const $ = id => document.getElementById(id);
 
-const CUSTOMER_STORAGE_KEY = 'nivetha-customer';
-const RETURN_TO_CHECKOUT_KEY = 'nivetha-return-to-checkout';
-const RETURN_TO_WHATSAPP_KEY = 'nivetha-return-to-whatsapp';
 const CHECKOUT_TOKEN_KEY = 'nivetha-checkout-token';
 const LAST_ORDER_KEY = 'nivetha-last-order';
-const ENQUIRY_HISTORY_PREFIX = 'nivetha-enquiry-history:';
-
-function getCustomer() {
-  try { return JSON.parse(localStorage.getItem(CUSTOMER_STORAGE_KEY) || 'null'); }
-  catch { return null; }
-}
-
-function isCustomerLoggedIn() {
-  const customer = getCustomer();
-  return Boolean(customer && (customer.mobile || customer.email));
-}
-
-function updateCustomerAccountLink() {
-  const link = $('customerAccountLink');
-  if (!link) return;
-  const customer = getCustomer();
-  link.href = 'account.html';
-  link.title = customer ? `Account: ${customer.name || customer.mobile || customer.email || 'Customer'}` : 'Login';
-  link.setAttribute('aria-label', customer ? 'Open customer account' : 'Login');
-}
-
-function redirectGuestToLogin() {
-  localStorage.setItem(RETURN_TO_CHECKOUT_KEY, '1');
-  window.location.href = 'account.html?return=checkout';
-}
-
-function redirectGuestToLoginForWhatsApp() {
-  localStorage.setItem(RETURN_TO_WHATSAPP_KEY, '1');
-  window.location.href = 'account.html?return=whatsapp';
-}
-
 
 const money = v =>
   `₹${Number(v || 0).toLocaleString('en-IN', {
@@ -581,24 +547,7 @@ function closeModal() {
 }
 
 
-function getHistoryKey(customer = getCustomer()) {
-  const identity = String(customer?.mobile || customer?.email || 'guest').toLowerCase().replace(/[^a-z0-9@._-]/g, '');
-  return `${ENQUIRY_HISTORY_PREFIX}${identity || 'guest'}`;
-}
-
-function loadEnquiryHistory(customer = getCustomer()) {
-  try {
-    const data = JSON.parse(localStorage.getItem(getHistoryKey(customer)) || '[]');
-    return Array.isArray(data) ? data : [];
-  } catch { return []; }
-}
-
-function saveEnquiryHistory(history, customer = getCustomer()) {
-  localStorage.setItem(getHistoryKey(customer), JSON.stringify(history));
-}
-
 function createEnquirySnapshot() {
-  const customer = getCustomer() || {};
   const items = S.cart.map((item, index) => {
     const p = productById(item.id);
     if (!p) return null;
@@ -615,15 +564,8 @@ function createEnquirySnapshot() {
     enquiryId: `ENQ-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`,
     submittedAt: new Date().toISOString(),
     enquiryType: S.enquiryType === 'wholesale' ? 'wholesale' : 'retail',
-    customer: { name: customer.name || '', mobile: customer.mobile || '', email: customer.email || '' },
     items
   };
-}
-
-function saveSubmittedEnquiry(snapshot) {
-  const history = loadEnquiryHistory(snapshot.customer);
-  history.unshift(snapshot);
-  saveEnquiryHistory(history.slice(0, 100), snapshot.customer);
 }
 
 function getShareableEnquiryUrl(snapshot) {
@@ -635,7 +577,6 @@ function getShareableEnquiryUrl(snapshot) {
 }
 
 function buildWhatsAppRequestMessage(snapshot) {
-  const customer = snapshot.customer || {};
   const lines = [
     "Hello Nivetha Dhoti's,",
     '',
@@ -649,10 +590,6 @@ function buildWhatsAppRequestMessage(snapshot) {
   lines.push('', `Enquiry type: ${snapshot.enquiryType === 'wholesale' ? 'Wholesale' : 'Retail'}`);
   lines.push('', 'View all selected dhoti images in one place:');
   lines.push(getShareableEnquiryUrl(snapshot));
-  lines.push('', 'Customer details:');
-  if (customer.name) lines.push(`Name: ${customer.name}`);
-  if (customer.mobile) lines.push(`Mobile: ${customer.mobile}`);
-  if (customer.email) lines.push(`Email: ${customer.email}`);
   lines.push('', `Enquiry reference: ${snapshot.enquiryId}`);
   lines.push('', 'Please confirm availability and share the price/details for the selected models. Thank you.');
   return lines.join('\n');
@@ -726,10 +663,6 @@ function sendWhatsAppRequest() {
   const message = $('checkoutMessage');
   if (!S.cart.length) return;
 
-  if (!isCustomerLoggedIn()) {
-    redirectGuestToLoginForWhatsApp();
-    return;
-  }
 
   const snapshot = createEnquirySnapshot();
   const url = getWhatsAppRequestUrl(snapshot);
@@ -738,8 +671,6 @@ function sendWhatsAppRequest() {
     return;
   }
 
-  // Save the enquiry before opening WhatsApp so it is available in the customer's history.
-  saveSubmittedEnquiry(snapshot);
 
   // Clear the active enquiry list after submission while keeping the generated QR/message intact.
   S.cart = [];
@@ -757,23 +688,12 @@ function checkoutSubtotalValue(){return S.cart.reduce((sum,item)=>{const p=produ
 function renderCheckoutSummary(){const box=$('checkoutItems');if(!box)return;box.innerHTML=S.cart.map(item=>{const p=productById(item.id);if(!p)return '';const q=Number(item.qty||0),pr=Number(p.retail_price||0),img=p.image_1||'';return `<article class="checkout-item"><div class="checkout-item-image-wrap">${img?`<img src="${img}" alt="${p.product_code||'Product'}">`:''}</div><div class="checkout-item-info"><strong>${p.product_code||'Product'}</strong><span>Qty: ${q}</span><span>${checkoutMoney(pr)} each</span></div><strong class="checkout-item-total">${checkoutMoney(pr*q)}</strong></article>`;}).join('');const sub=checkoutSubtotalValue(),ship=S.cart.length?Number(STORE_CONFIG.shippingCharge||0):0;$('checkoutSubtotal').textContent=checkoutMoney(sub);$('checkoutShipping').textContent=ship?checkoutMoney(ship):'FREE';$('checkoutTotal').textContent=checkoutMoney(sub+ship);}
 function openCheckout(){
   if(!STORE_CONFIG.commerceEnabled||!S.cart.length)return;
-  if(!isCustomerLoggedIn()){
-    closeCart();
-    redirectGuestToLogin();
-    return;
-  }
   closeCart();
   renderCheckoutSummary();
   $('checkoutFormMessage')?.classList.remove('success');
   if($('checkoutFormMessage')) $('checkoutFormMessage').textContent='';
   $('backToCartButton')?.removeAttribute('disabled');
   setCheckoutProcessing(false,'PAY NOW');
-  const customer=getCustomer();
-  if(customer){
-    if($('checkoutName') && !$('checkoutName').value) $('checkoutName').value=customer.name||'';
-    if($('checkoutMobile') && !$('checkoutMobile').value) $('checkoutMobile').value=customer.mobile||'';
-    if($('checkoutEmail') && !$('checkoutEmail').value) $('checkoutEmail').value=customer.email||'';
-  }
   $('checkoutModal').hidden=false;
   document.body.classList.add('checkout-open');
 }
@@ -932,10 +852,6 @@ async function handleCheckoutSubmit(e){
     if(message)message.textContent='Please correct the highlighted fields.';
     return;
   }
-  if(!isCustomerLoggedIn()){
-    redirectGuestToLogin();
-    return;
-  }
 
   setCheckoutProcessing(true,'PREPARING PAYMENT...');
   if(message)message.textContent='Checking stock and preparing secure payment...';
@@ -1034,20 +950,6 @@ document.addEventListener(
     });
 
 
-    updateCustomerAccountLink();
-
-    const returnParams = new URLSearchParams(window.location.search);
-    const shouldResumeWhatsApp = returnParams.get('whatsapp') === '1' || localStorage.getItem(RETURN_TO_WHATSAPP_KEY) === '1';
-    if (shouldResumeWhatsApp && isCustomerLoggedIn()) {
-      localStorage.removeItem(RETURN_TO_WHATSAPP_KEY);
-      if (returnParams.has('whatsapp')) {
-        returnParams.delete('whatsapp');
-        const query = returnParams.toString();
-        window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
-      }
-      window.__nivethaResumeWhatsApp = true;
-    }
-
     updateCartCount();
 
     document
@@ -1072,12 +974,6 @@ document.addEventListener(
       );
 
     applyCommerceMode();
-    Promise.resolve(load()).then(() => {
-      if (window.__nivethaResumeWhatsApp && S.cart.length) {
-        window.__nivethaResumeWhatsApp = false;
-        openCart();
-        if ($('checkoutMessage')) $('checkoutMessage').textContent = 'Login complete. Review your list and send the request on WhatsApp.';
-      }
-    });
+    load();
   }
 );
