@@ -931,3 +931,24 @@ body.whatsapp-qr-open {
 /* Build 28: resilient hero fallback so the first dhoti is never blank. */
 .hero-image{background:#2b160b url('/assets/hero-scroll-1.jpg') center/cover no-repeat}
 .hero-image:has(.hero-slide){background-image:none}
+
+
+/* Build 33 — clean hero UI. Product photos are original source images; no baked-in UI. */
+.hero-image{position:relative;overflow:hidden;background:#5a4639!important;background-image:none!important}
+.hero-slides{position:absolute;inset:0;background:#5a4639}
+.hero-frame{position:absolute;inset:0;opacity:0;transition:opacity .5s ease;display:flex;align-items:center;justify-content:center;overflow:hidden;background:linear-gradient(110deg,#5f4939,#8b776a 50%,#665248)}
+.hero-frame:nth-child(3){background:linear-gradient(110deg,#40352e,#75685e 50%,#4d423a)}
+.hero-frame:nth-child(4){background:linear-gradient(110deg,#4b503d,#7b8067 50%,#4c503f)}
+.hero-frame:nth-child(5){background:linear-gradient(110deg,#6d573d,#a58b64 50%,#725c42)}
+.hero-frame:nth-child(6){background:linear-gradient(110deg,#4e5643,#7c8668 50%,#4c5541)}
+.hero-frame:nth-child(7){background:linear-gradient(110deg,#3d3732,#706861 50%,#453e38)}
+.hero-frame.active{opacity:1;z-index:1}
+.hero-product-photo{height:100%;width:auto;max-width:100%;object-fit:contain;display:block;box-shadow:0 0 28px #0003}
+.hero-frame.first{display:block;background:#2b160b}
+.hero-frame.first .hero-product-photo{width:100%;height:100%;object-fit:cover;object-position:center right;box-shadow:none}
+.hero-image .slide{z-index:8!important;top:50%;transform:translateY(-50%);display:flex!important;align-items:center;justify-content:center}
+.hero-image .dots{z-index:8!important;left:50%!important;transform:translateX(-50%)!important;bottom:15px!important}
+.hero-dot{display:block!important;flex:0 0 auto;width:9px!important;height:9px!important;margin:0!important;padding:0!important;border:1px solid #fff!important;border-radius:50%!important;background:transparent!important;box-shadow:0 1px 4px #0008}
+.hero-dot.active{background:#ecc67f!important;border-color:#ecc67f!important}
+.header nav a{white-space:nowrap}
+@media(max-width:850px){.hero-product-photo{height:100%;max-width:100%}.hero-frame.first .hero-product-photo{object-position:center}}
