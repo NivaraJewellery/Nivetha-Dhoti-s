@@ -1,0 +1,1 @@
+Build 32: 7-slide hero carousel. Slide 1 uses the approved stacked-dhoti hero scene. Slides 2-7 use the approved individual-dhoti scene preview with complete traditional backgrounds. Left-side headline remains HTML.

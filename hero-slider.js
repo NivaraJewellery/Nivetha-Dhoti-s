@@ -1,11 +1,12 @@
 (() => {
   const slides = [
     { src: '/assets/hero-scroll-1.jpg', alt: 'Nivetha Dhotis premium collection hero' },
-    { src: '/assets/hero-scroll-2.jpg', alt: 'White dhoti with black border' },
-    { src: '/assets/hero-scroll-3.jpg', alt: 'White dhoti with teal green border' },
-    { src: '/assets/hero-scroll-4.jpg', alt: 'White dhoti with cream and gold zari border' },
-    { src: '/assets/hero-scroll-5.jpg', alt: 'White dhoti with green and gold border' },
-    { src: '/assets/hero-scroll-6.jpg', alt: 'White dhoti with fine black stripe border' }
+    { src: '/assets/hero-scroll-2.jpg', alt: 'Orange and gold border dhoti in a traditional interior' },
+    { src: '/assets/hero-scroll-3.jpg', alt: 'Black and gold border dhoti in a carved wood interior' },
+    { src: '/assets/hero-scroll-4.jpg', alt: 'Green and gold border dhoti with brass decor' },
+    { src: '/assets/hero-scroll-5.jpg', alt: 'Purple and gold border dhoti in a warm heritage setting' },
+    { src: '/assets/hero-scroll-6.jpg', alt: 'Blue and gold border dhoti in a traditional setting' },
+    { src: '/assets/hero-scroll-7.jpg', alt: 'Black stripe border dhoti in a premium heritage setting' }
   ];
 
   const init = () => {
