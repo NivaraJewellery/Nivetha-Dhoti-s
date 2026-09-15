@@ -24,6 +24,7 @@
     slides.forEach((s, i) => {
       const frame = document.createElement('div');
       frame.className = 'hero-frame' + (i === 0 ? ' active first' : '');
+      frame.style.setProperty('--slide-bg', `url("${s.src}")`);
       const img = document.createElement('img');
       img.className = 'hero-product-photo' + (s.cover ? ' cover' : '');
       img.src = s.src; img.alt = s.alt; img.draggable = false;

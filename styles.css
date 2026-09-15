@@ -952,3 +952,14 @@ body.whatsapp-qr-open {
 .hero-dot.active{background:#ecc67f!important;border-color:#ecc67f!important}
 .header nav a{white-space:nowrap}
 @media(max-width:850px){.hero-product-photo{height:100%;max-width:100%}.hero-frame.first .hero-product-photo{object-position:center}}
+
+
+/* Build 34 — photographic background fix while preserving original dhoti pixels. */
+.hero-frame{background-image:var(--slide-bg)!important;background-size:cover!important;background-position:center!important}
+.hero-frame::before{content:"";position:absolute;inset:0;background:rgba(35,17,7,.34);z-index:0}
+.hero-frame.first::before{display:none}
+.hero-product-photo{position:relative;z-index:1;display:block;height:100%;width:auto;max-width:72%;object-fit:contain;object-position:center;box-shadow:0 0 35px rgba(0,0,0,.20)}
+.hero-product-photo.cover{width:100%;max-width:none;height:100%;object-fit:cover;object-position:center}
+.hero-frame:not(.first) .hero-product-photo{background:transparent}
+.hero-image .slide,.hero-image .dots{z-index:10}
+@media(max-width:850px){.hero-product-photo{max-width:88%}}
