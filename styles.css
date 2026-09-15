@@ -918,15 +918,15 @@ body.whatsapp-qr-open {
 .hero-slide.active{opacity:1}
 .hero-slide-cover{object-fit:cover;object-position:center right}
 .hero-slide-contain{object-fit:contain;object-position:center;background:#2b160b}
-.hero-image.hero-first-slide:after{content:"";position:absolute;z-index:2;left:0;top:0;bottom:0;width:145px;pointer-events:none;background:linear-gradient(90deg,#2a140b 0%,rgba(42,20,11,.96) 58%,rgba(42,20,11,0) 100%)}
+.hero-image.hero-first-slide:after{display:none}
 .hero-image .slide{z-index:5;top:50%;transform:translateY(-50%);cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
 .hero-image .slide.left{left:14px}
 .hero-image .slide.right{right:14px}
 .hero-image .dots{z-index:5;position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
 .hero-dot{width:9px;height:9px;border:1px solid #fff;border-radius:50%;background:transparent;padding:0;cursor:pointer;box-shadow:0 1px 4px #0008}
 .hero-dot.active{background:#ecc67f;border-color:#ecc67f;transform:scale(1.08)}
-@media(max-width:850px){.hero-image{height:430px}.hero-slide-contain{object-fit:contain}.hero-image.hero-first-slide:after{width:95px}.hero-image .slide.left{left:10px}.hero-image .slide.right{right:10px}}
-@media(max-width:520px){.hero-image{height:390px}.hero-image.hero-first-slide:after{width:72px}.hero-image .dots{bottom:12px;gap:7px}.hero-dot{width:8px;height:8px}}
+@media(max-width:850px){.hero-image{height:430px}.hero-slide-contain{object-fit:contain}.hero-image.hero-first-slide:after{display:none}.hero-image .slide.left{left:10px}.hero-image .slide.right{right:10px}}
+@media(max-width:520px){.hero-image{height:390px}.hero-image.hero-first-slide:after{display:none}.hero-image .dots{bottom:12px;gap:7px}.hero-dot{width:8px;height:8px}}
 
 /* Build 28: resilient hero fallback so the first dhoti is never blank. */
 .hero-image{background:#2b160b url('/assets/hero-scroll-1.jpg') center/cover no-repeat}
