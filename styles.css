@@ -997,3 +997,21 @@ footer>div:nth-child(2) h4{margin-top:0}
   .footer-brand,footer>div:nth-child(2){justify-self:center}
   .footer-brand p{margin-left:auto;margin-right:auto}
 }
+
+/* Build 39 — first-visit guided tour + enquiry-cleared notice */
+.site-tour{position:fixed;inset:0;z-index:12000;pointer-events:none}
+.site-tour[hidden]{display:none!important}
+.site-tour-shade{position:fixed;inset:0;background:rgba(18,10,5,.66);pointer-events:auto}
+.site-tour-focus{position:fixed;border:3px solid #e7bf73;border-radius:12px;box-shadow:0 0 0 9999px rgba(18,10,5,.66),0 0 0 5px rgba(231,191,115,.24);z-index:12001;transition:all .22s ease;pointer-events:none}
+.site-tour-card{position:fixed;z-index:12002;width:min(360px,calc(100vw - 28px));background:#fffaf0;color:#3b2417;border-radius:14px;padding:20px;box-shadow:0 18px 55px rgba(0,0,0,.34);pointer-events:auto}
+.site-tour-card.centered{left:50%;top:50%;transform:translate(-50%,-50%)}
+.site-tour-progress{font:600 11px/1.2 Inter,sans-serif;letter-spacing:.08em;color:#8c6946;text-transform:uppercase;margin:0 0 8px}
+.site-tour-card h3{font:700 27px/1.05 "Cormorant Garamond",serif;margin:0 0 9px;color:#4b2b18}
+.site-tour-card p{font:400 14px/1.55 Inter,sans-serif;margin:0;color:#654b3b}
+.site-tour-actions{display:flex;align-items:center;gap:9px;margin-top:18px}
+.site-tour-skip{margin-right:auto;border:0;background:transparent;color:#725943;text-decoration:underline;cursor:pointer;padding:8px 2px}
+.site-tour-back,.site-tour-next{border:1px solid #6f4529;border-radius:7px;padding:9px 14px;font-weight:600;cursor:pointer}
+.site-tour-back{background:#fffaf0;color:#5b3823}.site-tour-next{background:#5b3823;color:white}
+.enquiry-cleared-notice{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:13000;width:min(560px,calc(100vw - 28px));background:#fff7e8;border:1px solid #d5a95c;border-left:5px solid #b57a22;color:#4b321e;border-radius:10px;box-shadow:0 12px 36px rgba(0,0,0,.25);padding:15px 44px 15px 16px;font:500 14px/1.45 Inter,sans-serif}
+.enquiry-cleared-notice[hidden]{display:none!important}.enquiry-cleared-notice button{position:absolute;right:10px;top:8px;border:0;background:transparent;font-size:24px;color:#6d4a2c;cursor:pointer}
+@media(max-width:600px){.site-tour-card{padding:17px}.site-tour-card h3{font-size:24px}.site-tour-actions{gap:6px}.site-tour-back,.site-tour-next{padding:9px 11px}.enquiry-cleared-notice{bottom:14px}}

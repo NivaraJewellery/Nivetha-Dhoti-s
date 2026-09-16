@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=33">
+<link rel="stylesheet" href="styles.css?v=39">
 </head>
 <body>
 <div class="topbar">
@@ -147,6 +147,25 @@
   </section>
 </dialog>
 
+<div id="siteTour" class="site-tour" hidden aria-live="polite">
+  <div class="site-tour-shade"></div>
+  <div id="siteTourFocus" class="site-tour-focus" hidden></div>
+  <section id="siteTourCard" class="site-tour-card centered" role="dialog" aria-modal="true" aria-labelledby="siteTourTitle">
+    <p id="siteTourProgress" class="site-tour-progress"></p>
+    <h3 id="siteTourTitle"></h3>
+    <p id="siteTourText"></p>
+    <div class="site-tour-actions">
+      <button id="siteTourSkip" class="site-tour-skip" type="button">Skip tour</button>
+      <button id="siteTourBack" class="site-tour-back" type="button">Back</button>
+      <button id="siteTourNext" class="site-tour-next" type="button">Next</button>
+    </div>
+  </section>
+</div>
+<div id="enquiryClearedNotice" class="enquiry-cleared-notice" hidden role="status" aria-live="polite">
+  <strong>Enquiry list cleared.</strong> Your selected dhotis were cleared after the WhatsApp request was prepared. You can start a new enquiry by selecting dhotis again.
+  <button id="enquiryClearedNoticeClose" type="button" aria-label="Close message">×</button>
+</div>
+
 <footer>
   <div class="footer-brand"><img src="assets/nivetha-logo-approved.jpg" alt="Nevetha Handlooms"><p>Bringing you the finest quality dhotis crafted with tradition, woven with care, and made for every occasion.</p></div>
   <div><h4>QUICK LINKS</h4><a href="#">Home</a><a href="#collections">Collections</a><a href="#products">Shop</a><a href="#about">About Us</a></div>
@@ -157,6 +176,6 @@
 document.querySelector('.menu').onclick=()=>document.querySelector('#nav').classList.toggle('open');
 </script>
 <script src="/hero-slider.js?v=33"></script>
-<script src="storefront.js?v=25"></script>
+<script src="storefront.js?v=39"></script>
 </body>
 </html>

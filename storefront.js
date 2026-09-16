@@ -977,3 +977,79 @@ document.addEventListener(
     load();
   }
 );
+
+/* Build 39 — automatic first-visit guided tour (desktop + mobile). */
+(() => {
+  const TOUR_KEY = 'nevetha-guided-tour-v1-complete';
+  const steps = [
+    { title:'Welcome to Nevetha Handlooms', text:'Take a quick tour to see how to browse our dhotis and send an enquiry on WhatsApp.' },
+    { target:'#collections', title:'Browse Collections', text:'Explore our dhotis by collection to quickly find the style you are looking for.' },
+    { target:'.store-toolbar', title:'Search & Filter', text:'Search by product name or code, and filter the collection to narrow your choices.' },
+    { target:'#productGrid', title:'Choose a Dhoti', text:'Open any dhoti to view its details and add the model to your enquiry list.' },
+    { target:'#cartButton', title:'My Enquiry', text:'Your selected dhotis appear here. Choose Retail or Wholesale and send your request through WhatsApp.' },
+    { title:'You’re Ready', text:'That’s it! Browse, select your favourite dhotis and send your enquiry directly to us on WhatsApp.' }
+  ];
+  let current = 0;
+  const $tour = document.getElementById('siteTour');
+  const $focus = document.getElementById('siteTourFocus');
+  const $card = document.getElementById('siteTourCard');
+  if (!$tour || !$focus || !$card) return;
+
+  const finish = () => {
+    localStorage.setItem(TOUR_KEY, '1');
+    $tour.hidden = true;
+    document.body.style.overflow = '';
+  };
+  const position = () => {
+    const step = steps[current];
+    const el = step.target ? document.querySelector(step.target) : null;
+    $card.classList.remove('centered');
+    if (!el) {
+      $focus.hidden = true;
+      $card.classList.add('centered');
+      return;
+    }
+    el.scrollIntoView({behavior:'smooth', block:'center'});
+    setTimeout(() => {
+      const r = el.getBoundingClientRect();
+      const pad = 7;
+      $focus.hidden = false;
+      Object.assign($focus.style,{left:`${Math.max(6,r.left-pad)}px`,top:`${Math.max(6,r.top-pad)}px`,width:`${Math.min(innerWidth-12,r.width+pad*2)}px`,height:`${Math.min(innerHeight-12,r.height+pad*2)}px`});
+      const cw = Math.min(360, innerWidth-28), ch = $card.offsetHeight || 210, gap=14;
+      let left = Math.min(Math.max(14,r.left), innerWidth-cw-14);
+      let top = r.bottom+gap;
+      if (top+ch>innerHeight-14) top = r.top-ch-gap;
+      if (top<14) { top = Math.max(14,innerHeight-ch-14); left=14; }
+      Object.assign($card.style,{left:`${left}px`,top:`${top}px`,transform:'none'});
+    }, 260);
+  };
+  const render = () => {
+    const step=steps[current];
+    document.getElementById('siteTourProgress').textContent=`Step ${current+1} of ${steps.length}`;
+    document.getElementById('siteTourTitle').textContent=step.title;
+    document.getElementById('siteTourText').textContent=step.text;
+    document.getElementById('siteTourBack').style.visibility=current===0?'hidden':'visible';
+    document.getElementById('siteTourNext').textContent=current===steps.length-1?'Finish':'Next';
+    position();
+  };
+  const start = () => { current=0; $tour.hidden=false; document.body.style.overflow='hidden'; render(); };
+  document.getElementById('siteTourSkip').addEventListener('click', finish);
+  document.getElementById('siteTourBack').addEventListener('click',()=>{if(current>0){current--;render();}});
+  document.getElementById('siteTourNext').addEventListener('click',()=>{if(current<steps.length-1){current++;render();}else finish();});
+  window.addEventListener('resize',()=>{if(!$tour.hidden) position();});
+  if (!localStorage.getItem(TOUR_KEY)) setTimeout(start, 800);
+})();
+
+/* Build 39 — tell the customer that the active enquiry was cleared after QR creation. */
+(() => {
+  const notice = document.getElementById('enquiryClearedNotice');
+  const close = document.getElementById('enquiryClearedNoticeClose');
+  if (!notice) return;
+  const show = () => { notice.hidden=false; clearTimeout(show.timer); show.timer=setTimeout(()=>notice.hidden=true,9000); };
+  close?.addEventListener('click',()=>notice.hidden=true);
+  const dialog = document.getElementById('whatsappQrDialog');
+  dialog?.addEventListener('close', show);
+  // Fallback for browsers where the dialog close event is not emitted by the custom close helper.
+  const original = window.closeWhatsAppQr;
+  if (typeof original === 'function') window.closeWhatsAppQr = function(){ const wasOpen=dialog?.open || dialog?.hasAttribute('open'); original(); if(wasOpen) show(); };
+})();
