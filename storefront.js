@@ -1009,8 +1009,16 @@ document.addEventListener(
       $card.classList.add('centered');
       return;
     }
-    el.scrollIntoView({behavior:'smooth', block:'center'});
-    setTimeout(() => {
+    // Build 40: keep header enquiry target in its real visible position.
+    // For other targets, use instant scrolling so the highlight is measured only
+    // after the page has reached its final position (avoids smooth-scroll drift).
+    if (step.target !== '#cartButton') {
+      const before = el.getBoundingClientRect();
+      if (before.top < 12 || before.bottom > innerHeight - 12) {
+        el.scrollIntoView({behavior:'auto', block:'center'});
+      }
+    }
+    requestAnimationFrame(() => requestAnimationFrame(() => {
       const r = el.getBoundingClientRect();
       const pad = 7;
       $focus.hidden = false;
@@ -1021,7 +1029,7 @@ document.addEventListener(
       if (top+ch>innerHeight-14) top = r.top-ch-gap;
       if (top<14) { top = Math.max(14,innerHeight-ch-14); left=14; }
       Object.assign($card.style,{left:`${left}px`,top:`${top}px`,transform:'none'});
-    }, 260);
+    }));
   };
   const render = () => {
     const step=steps[current];
