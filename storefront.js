@@ -1009,16 +1009,12 @@ document.addEventListener(
       $card.classList.add('centered');
       return;
     }
-    // Build 40: keep header enquiry target in its real visible position.
-    // For other targets, use instant scrolling so the highlight is measured only
-    // after the page has reached its final position (avoids smooth-scroll drift).
-    if (step.target !== '#cartButton') {
-      const before = el.getBoundingClientRect();
-      if (before.top < 12 || before.bottom > innerHeight - 12) {
-        el.scrollIntoView({behavior:'auto', block:'center'});
-      }
-    }
-    requestAnimationFrame(() => requestAnimationFrame(() => {
+    // Build 41: preserve Build 39 positioning for every step except My Enquiry.
+    // The enquiry button is already fixed/visible in the header, so scrolling it caused
+    // the focus box to be calculated at the wrong position.
+    const isEnquiryStep = current === 4;
+    if (!isEnquiryStep) el.scrollIntoView({behavior:'smooth', block:'center'});
+    setTimeout(() => {
       const r = el.getBoundingClientRect();
       const pad = 7;
       $focus.hidden = false;
@@ -1029,7 +1025,7 @@ document.addEventListener(
       if (top+ch>innerHeight-14) top = r.top-ch-gap;
       if (top<14) { top = Math.max(14,innerHeight-ch-14); left=14; }
       Object.assign($card.style,{left:`${left}px`,top:`${top}px`,transform:'none'});
-    }));
+    }, isEnquiryStep ? 0 : 260);
   };
   const render = () => {
     const step=steps[current];
