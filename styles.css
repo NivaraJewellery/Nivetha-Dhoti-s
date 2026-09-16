@@ -966,3 +966,34 @@ body.whatsapp-qr-open {
 
 /* Build 36: simplified portfolio footer */
 footer{grid-template-columns:minmax(260px,1.3fr) minmax(180px,.7fr);justify-content:space-between}footer a{text-decoration:none;cursor:pointer}footer a:hover{color:#f0d7a8}@media(max-width:520px){footer{grid-template-columns:1fr}}
+
+/* Build 37 — footer visibility and alignment */
+footer{
+  grid-template-columns:minmax(300px,520px) minmax(180px,260px);
+  justify-content:center;
+  column-gap:clamp(90px,12vw,220px);
+  align-items:center;
+}
+.footer-brand{justify-self:start}
+.footer-brand img{
+  width:210px;
+  height:120px;
+  object-fit:contain;
+  object-position:center;
+  mix-blend-mode:normal;
+  background:#f8ead2;
+  border-radius:6px;
+  padding:6px;
+  filter:none;
+}
+.footer-brand p{max-width:300px;margin-top:14px}
+footer>div:nth-child(2){justify-self:start;min-width:180px}
+footer>div:nth-child(2) h4{margin-top:0}
+@media(max-width:850px){
+  footer{grid-template-columns:1fr 1fr;column-gap:50px;padding-left:7vw;padding-right:7vw}
+}
+@media(max-width:520px){
+  footer{grid-template-columns:1fr;gap:28px;text-align:center}
+  .footer-brand,footer>div:nth-child(2){justify-self:center}
+  .footer-brand p{margin-left:auto;margin-right:auto}
+}
