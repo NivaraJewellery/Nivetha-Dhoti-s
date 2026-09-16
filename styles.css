@@ -963,3 +963,6 @@ body.whatsapp-qr-open {
 .hero-frame:not(.first) .hero-product-photo{background:transparent}
 .hero-image .slide,.hero-image .dots{z-index:10}
 @media(max-width:850px){.hero-product-photo{max-width:88%}}
+
+/* Build 36: simplified portfolio footer */
+footer{grid-template-columns:minmax(260px,1.3fr) minmax(180px,.7fr);justify-content:space-between}footer a{text-decoration:none;cursor:pointer}footer a:hover{color:#f0d7a8}@media(max-width:520px){footer{grid-template-columns:1fr}}
