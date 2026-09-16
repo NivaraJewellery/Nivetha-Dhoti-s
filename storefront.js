@@ -14,7 +14,9 @@ const S = {
   products: [],
   cart: loadCart(),
   activeProductId: null,
-  enquiryType: localStorage.getItem('nivetha-enquiry-type') || 'retail'
+  enquiryType: localStorage.getItem('nivetha-enquiry-type') || 'retail',
+  productPage: 1,
+  productsPerPage: 15
 };
 
 function loadCart() {
@@ -143,6 +145,7 @@ function collections() {
   t.querySelectorAll('[data-category]').forEach(a => {
     a.onclick = () => {
       $('storeCategory').value = a.dataset.category;
+      S.productPage = 1;
       products();
     };
   });
@@ -195,92 +198,77 @@ function filtered() {
 
 function products() {
   const a = filtered();
+  const totalPages = Math.max(1, Math.ceil(a.length / S.productsPerPage));
+  if (S.productPage > totalPages) S.productPage = totalPages;
+  if (S.productPage < 1) S.productPage = 1;
 
-  $('storeCount').textContent =
-    `Showing ${a.length} of ${S.products.length}`;
+  const startIndex = (S.productPage - 1) * S.productsPerPage;
+  const pageItems = a.slice(startIndex, startIndex + S.productsPerPage);
 
-  $('productGrid').innerHTML = a.length
-    ? a.map(p => {
+  $('storeCount').textContent = a.length
+    ? `Showing ${startIndex + 1}-${Math.min(startIndex + pageItems.length, a.length)} of ${a.length}`
+    : `Showing 0 of ${S.products.length}`;
+
+  $('productGrid').innerHTML = pageItems.length
+    ? pageItems.map(p => {
         return `
           <article class="product-card dynamic">
-
-            <div
-              class="pic product-image-click"
-              data-product-id="${p.id}"
-            >
-              ${
-                p.image_1
-                  ? `<img
-                      class="product-img primary-img"
-                      src="${esc(p.image_1)}"
-                      alt="Dhoti ${esc(p.product_code || '')}"
-                    >`
-                  : ''
-              }
-
-              ${
-                p.image_2
-                  ? `<img
-                      class="product-img secondary-img"
-                      src="${esc(p.image_2)}"
-                      alt="Dhoti ${esc(p.product_code || '')} alternate view"
-                    >`
-                  : ''
-              }
-
-              <button
-                class="heart"
-                type="button"
-                aria-label="Add to wishlist"
-              >
-                ♡
-              </button>
+            <div class="pic product-image-click" data-product-id="${p.id}">
+              ${p.image_1 ? `<img class="product-img primary-img" src="${esc(p.image_1)}" alt="Dhoti ${esc(p.product_code || '')}">` : ''}
+              ${p.image_2 ? `<img class="product-img secondary-img" src="${esc(p.image_2)}" alt="Dhoti ${esc(p.product_code || '')} alternate view">` : ''}
             </div>
-
             <div class="product-card-info">
-              <p class="product-code">
-                ${esc(p.product_name || p.product_code)}
-              </p>
-
-              <button
-                class="view-details${isInEnquiry(p.id) ? ' enquiry-added' : ''}"
-                data-id="${p.id}"
-                type="button"
-                aria-label="${isInEnquiry(p.id) ? 'Added to enquiry. View details for ' : 'View details for '}${esc(p.product_code || 'product')}"
-              >
+              <p class="product-code">${esc(p.product_name || p.product_code)}</p>
+              <button class="view-details${isInEnquiry(p.id) ? ' enquiry-added' : ''}" data-id="${p.id}" type="button" aria-label="${isInEnquiry(p.id) ? 'Added to enquiry. View details for ' : 'View details for '}${esc(p.product_code || 'product')}">
                 ${isInEnquiry(p.id)
                   ? '<span class="enquiry-added-check" aria-hidden="true">✓</span><span>Added to Enquiry</span>'
                   : '<span>View Details</span><span class="view-details-arrow" aria-hidden="true">→</span>'}
               </button>
             </div>
-
           </article>
         `;
       }).join('')
     : '<p class="store-empty">No products match your selection.</p>';
 
-  $('productGrid')
-    .querySelectorAll('.view-details')
-    .forEach(b => {
-      b.onclick = () =>
-        openModal(+b.dataset.id);
-    });
+  $('productGrid').querySelectorAll('.view-details').forEach(b => {
+    b.onclick = () => openModal(+b.dataset.id);
+  });
 
-  $('productGrid')
-    .querySelectorAll('.product-image-click')
-    .forEach(img => {
-      img.onclick = e => {
-        if (e.target.closest('.heart')) {
-          return;
-        }
+  $('productGrid').querySelectorAll('.product-image-click').forEach(img => {
+    img.onclick = () => openModal(+img.dataset.productId);
+  });
 
-        openModal(
-          +img.dataset.productId
-        );
-      };
-    });
+  renderProductPagination(a.length, totalPages);
 }
 
+function renderProductPagination(totalItems, totalPages) {
+  const box = $('productPagination');
+  if (!box) return;
+  if (totalItems <= S.productsPerPage) {
+    box.innerHTML = '';
+    box.hidden = true;
+    return;
+  }
+
+  box.hidden = false;
+  const buttons = [];
+  buttons.push(`<button type="button" class="pagination-nav" data-page="${S.productPage - 1}" ${S.productPage === 1 ? 'disabled' : ''} aria-label="Previous page">‹ Previous</button>`);
+
+  for (let page = 1; page <= totalPages; page++) {
+    buttons.push(`<button type="button" class="pagination-page${page === S.productPage ? ' active' : ''}" data-page="${page}" ${page === S.productPage ? 'aria-current="page"' : ''}>${page}</button>`);
+  }
+
+  buttons.push(`<button type="button" class="pagination-nav" data-page="${S.productPage + 1}" ${S.productPage === totalPages ? 'disabled' : ''} aria-label="Next page">Next ›</button>`);
+  box.innerHTML = buttons.join('');
+
+  box.querySelectorAll('button[data-page]:not(:disabled)').forEach(button => {
+    button.addEventListener('click', () => {
+      S.productPage = Number(button.dataset.page) || 1;
+      products();
+      document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+}
 function openModal(id) {
   const p = S.products.find(
     x => +x.id === id
@@ -917,13 +905,13 @@ document.addEventListener(
     $('storeSearch')
       .addEventListener(
         'input',
-        products
+        () => { S.productPage = 1; products(); }
       );
 
     $('storeCategory')
       .addEventListener(
         'change',
-        products
+        () => { S.productPage = 1; products(); }
       );
 
     $('modalAddToCart')?.addEventListener('click', addActiveProductToCart);
