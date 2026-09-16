@@ -239,7 +239,7 @@ function products() {
 
             <div class="product-card-info">
               <p class="product-code">
-                ${esc(p.product_code)}
+                ${esc(p.product_name || p.product_code)}
               </p>
 
               <button
